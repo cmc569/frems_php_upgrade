@@ -36,6 +36,10 @@ $sql = "
 $rs = $conn->Execute($sql);
 
 $branch_type1 = $rs->fields['store'];
+$branch_type2 = '';
+$branch_type3 = '';
+$branch_type4 = '';
+
 if ($rs->fields['cBranchNum1'] > 0) {
 	$branch_type2 = $rs->fields['store1'];
 }
@@ -61,6 +65,7 @@ $data_scrivener['sName'] = $rs->fields['sName'];
 ##
 ##
 //發票指定對象
+$data_invoice_another = array();
 $sql = "SELECT * FROM tContractInvoiceExt  WHERE cCertifiedId ='".$id."'";
 
 $rs = $conn->Execute($sql);
@@ -79,6 +84,10 @@ while (!$rs->EOF) {
 }
 
 //取得其他買賣方利息金額(增加查詢姓名及發票金額)
+	$buyer_other = array();
+	$owner_other = array();
+	$int_money = 0;
+	
 	$sql = 'SELECT cInterestMoney,cInvoiceMoney,cName,cIdentity,cInvoiceDonate,cId,cInvoicePrint, cIdentifyId, cInvoiceMoneyCheck FROM tContractOthers WHERE cCertifiedId="'.$id.'" ORDER BY cId ASC;' ;
 
 	$rs = $conn->Execute($sql) ;
@@ -112,10 +121,10 @@ $smarty->assign('data_scrivener', $data_scrivener);
 
 $smarty->assign('data_invoice_another',$data_invoice_another);
 $smarty->assign('data_buyer_other', $buyer_other);
-$smarty->assign('buyer_other_count', count($buyer_other)+2);
+$smarty->assign('buyer_other_count', is_array($buyer_other) ? count($buyer_other)+2 : 2);
 $smarty->assign('data_owner_other', $owner_other);
-$smarty->assign('owner_other_count', count($owner_other)+2);
-$smarty->assign('branch_count',count($branch_count)+2);
+$smarty->assign('owner_other_count', is_array($owner_other) ? count($owner_other)+2 : 2);
+$smarty->assign('branch_count', isset($branch_count) && is_array($branch_count) ? count($branch_count)+2 : 2);
 
 
 
