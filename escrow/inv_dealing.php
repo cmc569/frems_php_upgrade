@@ -1,4 +1,9 @@
 <?php
+// PHP 8+ 兼容性初始化
+$arr          = [];
+$owner_total  = 0;
+$buyer_total  = 0;
+$realty_total = 0;
 require_once dirname(__DIR__) . '/configs/config.class.php';
 require_once dirname(__DIR__) . '/class/SmartyMain.class.php';
 require_once dirname(__DIR__) . '/class/getAddress.php';
@@ -26,26 +31,24 @@ function another($conn, $cCertifiedId, $type, $tbl, $id)
     $sql = "SELECT * FROM tContractInvoiceExt WHERE cCertifiedId='" . $cCertifiedId . "' AND cDBName ='" . $tbl . "' AND cTBId='" . $id . "'";
     $rs  = $conn->Execute($sql);
 
-    $i = 0;
-    while (!$rs->EOF) {
-        $arr[$i] = $rs->fields;
-
+    $i   = 0;
+    $arr = [];
+    while (! $rs->EOF) {
+        $arr[$i]         = $rs->fields;
         $arr[$i]['type'] = $type;
         $arr[$i]['tbl']  = $tbl;
-
         $i++;
         $rs->MoveNext();
     }
-
     return $arr;
 }
 
 // ##
 $cSignCategory = $_REQUEST['cSignCategory']; //判斷合約書位置
 
-$cId  = $_REQUEST['cCertifiedId'];
+$cId                  = $_REQUEST['cCertifiedId'];
 $latestCertifiedMoney = $_REQUEST['latestCertifiedMoney'];
-$save = $_REQUEST['save'];
+$save                 = $_REQUEST['save'] ?? '';
 
 $cCertifiedId = substr($cId, 5);
 
@@ -59,7 +62,7 @@ $inv_another_area    = listArea($conn, '');
 
 //處理更新資料
 if ($save == 'ok') {
-    //更新大項金額(tContractInvoice、包含地政士與捐款小項)
+              //更新大項金額(tContractInvoice、包含地政士與捐款小項)
     $cIO = 0; //分配給賣方
     if ($_POST['cInvoiceOwner'] != '0') {$cIO = 1;}
 
@@ -279,24 +282,28 @@ $rs = null;unset($rs);
 $sql = 'SELECT * FROM tContractInvoice WHERE cCertifiedId="' . $cCertifiedId . '";';
 $tmp = $conn->Execute($sql);
 
-$cInvoiceOwner      = $tmp->fields['cInvoiceOwner']; //賣方
-$cInvoiceBuyer      = $tmp->fields['cInvoiceBuyer']; //買方
+$cInvoiceOwner      = $tmp->fields['cInvoiceOwner'];      //賣方
+$cInvoiceBuyer      = $tmp->fields['cInvoiceBuyer'];      //買方
 $cInvoiceRealestate = $tmp->fields['cInvoiceRealestate']; //仲介
-$cInvoiceScrivener  = $tmp->fields['cInvoiceScrivener']; //代書
-$cInvoiceOther      = $tmp->fields['cInvoiceOther']; //捐創世
+$cInvoiceScrivener  = $tmp->fields['cInvoiceScrivener'];  //代書
+$cInvoiceOther      = $tmp->fields['cInvoiceOther'];      //捐創世
 ##
 ##其他的身分別(select)
 $iden_count = 0;
 ##
 ##
-$owner_another = array();
-$buyer_another = array();
+$owner_another = [];
+$buyer_another = [];
 
 //取得賣方對象清單
 $sql = 'SELECT * FROM tContractOwner WHERE cCertifiedId="' . $cCertifiedId . '";';
 $tmp = $conn->Execute($sql); //首位賣方
 
 ##如果是公司則無法捐贈發票
+if (! isset($owner[0]['donate'])) {
+    $owner[0]['donate'] = '';
+}
+
 if (mb_strlen($tmp->fields['cIdentifyId']) == 8) {
     $owner[0]['donate'] = 'disabled=disabled';
 }
@@ -305,12 +312,12 @@ if (mb_strlen($tmp->fields['cIdentifyId']) == 8) {
 $owner[0]['type'] = '賣方1';
 $owner[0]['tbl']  = 'tContractOwner';
 ##
-$owner[0]['cId']            = $tmp->fields['cId']; //索引編號
-$owner[0]['first']          = '1'; //是否為第一位?
-$owner[0]['cName']          = $tmp->fields['cName']; //姓名
-$owner[0]['cInvoiceMoney']  = $tmp->fields['cInvoiceMoney']; //發票金額
-$owner[0]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate']; //是否捐贈發票
-$owner[0]['cInvoicePrint']  = $tmp->fields['cInvoicePrint']; //是否捐贈發票
+$owner[0]['cId']            = $tmp->fields['cId'];                       //索引編號
+$owner[0]['first']          = '1';                                       //是否為第一位?
+$owner[0]['cName']          = $tmp->fields['cName'];                     //姓名
+$owner[0]['cInvoiceMoney']  = $tmp->fields['cInvoiceMoney'];             //發票金額
+$owner[0]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate'];            //是否捐贈發票
+$owner[0]['cInvoicePrint']  = $tmp->fields['cInvoicePrint'];             //是否捐贈發票
 $owner_total                = $owner_total + $owner[0]['cInvoiceMoney']; //賣方發票總額(個別加總)
 
 $arr = another($conn, $cCertifiedId, '指定1', $owner[0]['tbl'], $owner[0]['cId']);
@@ -330,8 +337,8 @@ $tmp = $conn->Execute($sql); //其他賣方
 
 $index = 1;
 $j     = 2;
-while (!$tmp->EOF) {
-    ##如果是公司則無法捐贈發票
+while (! $tmp->EOF) {
+                                                       ##如果是公司則無法捐贈發票
     if (mb_strlen($tmp->fields['cIdentifyId']) == 8) { //
         $owner[$index]['donate'] = 'disabled=disabled';
     }
@@ -345,9 +352,12 @@ while (!$tmp->EOF) {
     $owner[$index]['first']          = '2';
     $owner[$index]['cName']          = $tmp->fields['cName'];
     $owner[$index]['cInvoiceMoney']  = $tmp->fields['cInvoiceMoney'];
-    $owner[$index]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate']; //是否捐贈發票
-    $owner[$index]['cInvoicePrint']  = $tmp->fields['cInvoicePrint']; //是否列印發票
+    $owner[$index]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate'];                 //是否捐贈發票
+    $owner[$index]['cInvoicePrint']  = $tmp->fields['cInvoicePrint'];                  //是否列印發票
     $owner_total                     = $owner_total + $owner[$index]['cInvoiceMoney']; //賣方發票總額(個別加總)
+    if (! isset($owner[$index]['donate'])) {
+        $owner[$index]['donate'] = '';
+    }
 
     $arr = another($conn, $cCertifiedId, '指定' . $j, $owner[$index]['tbl'], $owner[$index]['cId']);
 
@@ -384,12 +394,12 @@ $buyer[0]['type'] = '買方1';
 $buyer[0]['tbl']  = 'tContractBuyer';
 ##
 
-$buyer[0]['cId']            = $tmp->fields['cId']; //保證號碼
-$buyer[0]['first']          = '1'; //是否為第一位?
-$buyer[0]['cName']          = $tmp->fields['cName']; //姓名
-$buyer[0]['cInvoiceMoney']  = $tmp->fields['cInvoiceMoney']; //發票金額
-$buyer[0]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate']; //是否捐贈發票
-$buyer[0]['cInvoicePrint']  = $tmp->fields['cInvoicePrint']; //是否列印發票
+$buyer[0]['cId']            = $tmp->fields['cId'];                       //保證號碼
+$buyer[0]['first']          = '1';                                       //是否為第一位?
+$buyer[0]['cName']          = $tmp->fields['cName'];                     //姓名
+$buyer[0]['cInvoiceMoney']  = $tmp->fields['cInvoiceMoney'];             //發票金額
+$buyer[0]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate'];            //是否捐贈發票
+$buyer[0]['cInvoicePrint']  = $tmp->fields['cInvoicePrint'];             //是否列印發票
 $buyer_total                = $buyer_total + $buyer[0]['cInvoiceMoney']; //買方發票總額(個別加總)
 $tmp                        = null;unset($tmp);
 
@@ -413,8 +423,8 @@ $tmp = $conn->Execute($sql); //其他買方
 $index = count($buyer);
 $j     = 2;
 
-while (!$tmp->EOF) {
-    ##如果是公司則無法捐贈發票
+while (! $tmp->EOF) {
+                                                       ##如果是公司則無法捐贈發票
     if (mb_strlen($tmp->fields['cIdentifyId']) == 8) { //
         $buyer[$index]['donate'] = 'disabled=disabled';
     }
@@ -429,8 +439,8 @@ while (!$tmp->EOF) {
     $buyer[$index]['first']          = '2';
     $buyer[$index]['cName']          = $tmp->fields['cName'];
     $buyer[$index]['cInvoiceMoney']  = $tmp->fields['cInvoiceMoney'];
-    $buyer[$index]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate']; //是否捐贈發票
-    $buyer[$index]['cInvoicePrint']  = $tmp->fields['cInvoicePrint']; //是否列印發票
+    $buyer[$index]['cInvoiceDonate'] = $tmp->fields['cInvoiceDonate'];                 //是否捐贈發票
+    $buyer[$index]['cInvoicePrint']  = $tmp->fields['cInvoicePrint'];                  //是否列印發票
     $buyer_total                     = $buyer_total + $buyer[$index]['cInvoiceMoney']; //買方發票總額(個別加總)
 
     $arr = another($conn, $cCertifiedId, '指定' . $j, $buyer[$index]['tbl'], $buyer[$index]['cId']);
@@ -458,8 +468,8 @@ $tmp = null;unset($tmp);
 $sql = 'SELECT * FROM tContractRealestate WHERE	cCertifyId="' . $cCertifiedId . '";';
 $tmp = $conn->Execute($sql);
 
-$realty1        = $realty2        = $realty3        = array();
-$realty_another = array();
+$realty1        = $realty2        = $realty3        = [];
+$realty_another = [];
 
 $ri = 0;
 if ($tmp->fields['cBranchNum'] != '0') {
@@ -608,7 +618,7 @@ $scrivener_total   = $tmp->fields['cInvoiceMoney'];
 
 $scrivener_another = another($conn, $cCertifiedId, '地政士', $scrivener['tbl'], $scrivener['cId']);
 
-for ($i = 0; $i < count($scrivener_another); $i++) {
+for ($i = 0; $i < count($scrivener_another ?? []); $i++) {
     $scrivener_total = $scrivener_total + $scrivener_another[$i]['cInvoiceMoney'];
 }
 
@@ -634,36 +644,175 @@ $smarty->assign('cCertifiedMoney', $cCertifiedMoney);
 $smarty->assign('latestCertifiedMoney', $latestCertifiedMoney);
 $smarty->assign('cSignCategory', $cSignCategory);
 
+// 統一為所有相關陣列補齊 'donate' 欄位，避免模板警告
+// 處理 owner 陣列
+if (is_array($owner)) {
+    foreach ($owner as $k => $v) {
+        if (is_array($v) && ! isset($owner[$k]['donate'])) {
+            $owner[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 buyer 陣列
+if (is_array($buyer)) {
+    foreach ($buyer as $k => $v) {
+        if (is_array($v) && ! isset($buyer[$k]['donate'])) {
+            $buyer[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 realty 陣列
+if (is_array($realty)) {
+    foreach ($realty as $k => $v) {
+        if (is_array($v) && ! isset($realty[$k]['donate'])) {
+            $realty[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 scrivener 陣列 (可能是單一記錄)
+if (is_array($scrivener) && ! isset($scrivener['donate'])) {
+    $scrivener['donate'] = '';
+}
+
+// 處理 owner_another 陣列
+if (is_array($owner_another)) {
+    foreach ($owner_another as $k => $v) {
+        if (is_array($v) && ! isset($owner_another[$k]['donate'])) {
+            $owner_another[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 buyer_another 陣列
+if (is_array($buyer_another)) {
+    foreach ($buyer_another as $k => $v) {
+        if (is_array($v) && ! isset($buyer_another[$k]['donate'])) {
+            $buyer_another[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 realty_another 陣列
+if (is_array($realty_another)) {
+    foreach ($realty_another as $k => $v) {
+        if (is_array($v) && ! isset($realty_another[$k]['donate'])) {
+            $realty_another[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 scrivener_another 陣列
+if (is_array($scrivener_another)) {
+    foreach ($scrivener_another as $k => $v) {
+        if (is_array($v) && ! isset($scrivener_another[$k]['donate'])) {
+            $scrivener_another[$k]['donate'] = '';
+        }
+    }
+}
+
 //賣方
-$smarty->assign('cInvoiceOwner', $cInvoiceOwner); //賣方發票總額
-$smarty->assign('owner_count', count($owner)); //賣方數量
-$smarty->assign('data_owner', $owner); //賣方資料
-$smarty->assign('owner_total', $owner_total); //賣方發票總額(個別)
+$smarty->assign('cInvoiceOwner', $cInvoiceOwner);    //賣方發票總額
+$smarty->assign('owner_count', count($owner ?? [])); //賣方數量
+$smarty->assign('data_owner', $owner);               //賣方資料
+$smarty->assign('owner_total', $owner_total);        //賣方發票總額(個別)
 
 //買方
-$smarty->assign('cInvoiceBuyer', $cInvoiceBuyer); //買方發票總額
-$smarty->assign('buyer_count', count($buyer)); //買方數量
-$smarty->assign('data_buyer', $buyer); //買方資料
-$smarty->assign('buyer_total', $buyer_total); //買方發票總額(個別)
+$smarty->assign('cInvoiceBuyer', $cInvoiceBuyer);    //買方發票總額
+$smarty->assign('buyer_count', count($buyer ?? [])); //買方數量
+$smarty->assign('data_buyer', $buyer);               //買方資料
+$smarty->assign('buyer_total', $buyer_total);        //買方發票總額(個別)
 
 //仲介
 $smarty->assign('cInvoiceRealestate', $cInvoiceRealestate); //仲介發票總額
-$smarty->assign('realty_count', count($realty)); //仲介數量
-$smarty->assign('data_realty', $realty); //仲介資料
-$smarty->assign('realty_total', $realty_total); //仲介
+$smarty->assign('realty_count', count($realty ?? []));      //仲介數量
+$smarty->assign('data_realty', $realty);                    //仲介資料
+$smarty->assign('realty_total', $realty_total);             //仲介
 
 //地政士
 $smarty->assign('cInvoiceScrivener', $cInvoiceScrivener); //發票總額
-$smarty->assign('scrivener_total', $scrivener_total); //發票總額(個別)
+$smarty->assign('scrivener_total', $scrivener_total);     //發票總額(個別)
 $smarty->assign('data_scrivener', $scrivener);
 
 //創世
 $smarty->assign('cInvoiceOther', $cInvoiceOther); //發票總額
 
 //指定
-$smarty->assign('data_owner_another', $owner_another); //賣方指定人資料
-$smarty->assign('data_buyer_another', $buyer_another); //買方指定人資料
-$smarty->assign('data_realty_another', $realty_another); //仲介指定人資料
+
+// 簡單直接地為所有相關陣列補齊 'donate' 欄位
+// 處理 owner 陣列
+if (is_array($owner)) {
+    foreach ($owner as $k => $v) {
+        if (is_array($v) && ! isset($owner[$k]['donate'])) {
+            $owner[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 owner_another 陣列
+if (is_array($owner_another)) {
+    foreach ($owner_another as $k => $v) {
+        if (is_array($v) && ! isset($owner_another[$k]['donate'])) {
+            $owner_another[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 buyer 陣列
+if (is_array($buyer)) {
+    foreach ($buyer as $k => $v) {
+        if (is_array($v) && ! isset($buyer[$k]['donate'])) {
+            $buyer[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 buyer_another 陣列
+if (is_array($buyer_another)) {
+    foreach ($buyer_another as $k => $v) {
+        if (is_array($v) && ! isset($buyer_another[$k]['donate'])) {
+            $buyer_another[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 realty 陣列
+if (is_array($realty)) {
+    foreach ($realty as $k => $v) {
+        if (is_array($v) && ! isset($realty[$k]['donate'])) {
+            $realty[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 realty_another 陣列
+if (is_array($realty_another)) {
+    foreach ($realty_another as $k => $v) {
+        if (is_array($v) && ! isset($realty_another[$k]['donate'])) {
+            $realty_another[$k]['donate'] = '';
+        }
+    }
+}
+
+// 處理 scrivener 陣列 (可能是單一記錄)
+if (is_array($scrivener) && ! isset($scrivener['donate'])) {
+    $scrivener['donate'] = '';
+}
+
+// 處理 scrivener_another 陣列
+if (is_array($scrivener_another)) {
+    foreach ($scrivener_another as $k => $v) {
+        if (is_array($v) && ! isset($scrivener_another[$k]['donate'])) {
+            $scrivener_another[$k]['donate'] = '';
+        }
+    }
+}
+
+$smarty->assign('data_owner_another', $owner_another);         //賣方指定人資料
+$smarty->assign('data_buyer_another', $buyer_another);         //買方指定人資料
+$smarty->assign('data_realty_another', $realty_another);       //仲介指定人資料
 $smarty->assign('data_scrivener_another', $scrivener_another); //地政士指定人資料
 
 if ($cCertifiedMoney == 0) {
@@ -677,5 +826,15 @@ if ((count($owner) >= 5) && ($cTotalMoney <= 10000000)) {
     $certify_money_notice = file_get_contents($fh);
 }
 $smarty->assign('certify_money_notice', $certify_money_notice);
+
+// 補齊所有 owner 陣列元素的 donate 欄位，避免模板警告
+if (is_array($owner)) {
+    foreach ($owner as $k => $v) {
+        if (! isset($owner[$k]['donate'])) {
+            $owner[$k]['donate'] = '';
+        }
+
+    }
+}
 
 $smarty->display('inv_dealing.inc.tpl', '', 'escrow');
