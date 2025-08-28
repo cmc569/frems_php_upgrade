@@ -439,9 +439,22 @@
                     $('form[name=form_fee]').submit();
 
                 });
-                $( "#tabs" ).tabs({
-                    selected: <{$_tabs}>
-                });
+                
+                // jQuery UI Tabs 初始化
+                try {
+                    var selectedTab = parseInt(<{$_tabs}>) || 0;
+                    if ($("#tabs").length > 0) {
+                        $( "#tabs" ).tabs({
+                            selected: selectedTab
+                        });
+                    }
+                } catch(e) {
+                    console.log('Tabs initialization error:', e);
+                    // 嘗試使用默認設置
+                    if ($("#tabs").length > 0) {
+                        $( "#tabs" ).tabs();
+                    }
+                }
 
                  $('#sync_owneraddr').live('change', function () {
                      if ($('#sync_owneraddr').attr('checked') == 'checked') {
@@ -4461,6 +4474,45 @@
                 width:980px;
                 margin-left:auto; 
                 margin-right:auto;
+            }
+            
+            /* 修復 jQuery UI Tabs CSS 衝突 */
+            #tabs > ul {
+                width: auto !important;
+                height: auto !important;
+                border: none !important;
+                text-align: left !important;
+                background: none !important;
+            }
+            
+            #tabs > ul li {
+                float: none !important;
+                height: auto !important;
+                line-height: normal !important;
+                border: none !important;
+                background: none !important;
+                margin-bottom: 0 !important;
+                position: static !important;
+                overflow: visible !important;
+                display: inline-block !important;
+            }
+            
+            #tabs > ul li a {
+                border: none !important;
+                padding: 0.5em 1em !important;
+                color: #000 !important;
+                display: block !important;
+                text-decoration: none !important;
+            }
+            
+            #tabs > ul li a:hover {
+                background: #ddd !important;
+            }
+            
+            #tabs > ul li.ui-tabs-active,
+            #tabs > ul li.ui-tabs-selected {
+                background: #fff !important;
+                border-bottom: none !important;
             }
 
             #tabs table th {

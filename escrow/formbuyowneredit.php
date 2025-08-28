@@ -1,4 +1,8 @@
 ﻿<?php
+// 暫時隱藏 PHP Warning 警告
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 1);
+
 require_once dirname(__DIR__) . '/configs/config.class.php';
 require_once dirname(__DIR__) . '/class/SmartyMain.class.php';
 require_once dirname(__DIR__) . '/class/advance.class.php';
@@ -31,7 +35,7 @@ if (empty($id)) {
 }
 
 //20230325 指定顯示的頁籤
-$_tabs = isset($_POST['_tabs']) && preg_match("/^\d+$/", $_POST['_tabs']) ? $_POST['_tabs'] : '0';
+$_tabs = isset($_POST['_tabs']) && preg_match("/^\d+$/", $_POST['_tabs']) ? intval($_POST['_tabs']) : 0;
 ##
 
 $advance            = new Advance();
