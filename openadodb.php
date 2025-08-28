@@ -4,8 +4,11 @@ require_once __DIR__ . '/includes/lib.php';
 require_once __DIR__ . '/adodb5/adodb.inc.php';
 require_once __DIR__ . '/.env.php';
 
-ini_set('session.cookie_lifetime', 0);
-ini_set('session.gc_maxlifetime', 86400);
+// 只有在 session 尚未啟動時才設定這些參數
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_lifetime', 0);
+    ini_set('session.gc_maxlifetime', 86400);
+}
 
 $conn = ADONewConnection('mysqli');
 

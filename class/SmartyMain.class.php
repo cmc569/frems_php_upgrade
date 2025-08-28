@@ -1,13 +1,13 @@
 <?php
-require_once dirname(__DIR__) . '/libs/smarty/Smarty.class.php';
+require_once dirname(__DIR__) . '/libs/smarty/libs/Smarty.class.php';
 
-$smarty = new Smarty();
+$smarty = new Smarty\Smarty();
 
-$smarty->left_delimiter  = '<{';
-$smarty->right_delimiter = '}>';
-$smarty->compile_dir     = $GLOBALS['FILE_PATH'] . 'templates_c/';
-$smarty->cache_dir       = $GLOBALS['FILE_PATH'] . 'cache/';
-$smarty->setTemplateDir(array(
+$smarty->setLeftDelimiter('<{');
+$smarty->setRightDelimiter('}>');
+$smarty->setCompileDir($GLOBALS['FILE_PATH'] . 'templates_c/');
+$smarty->setCacheDir($GLOBALS['FILE_PATH'] . 'cache/');
+$smarty->setTemplateDir([
     ''                => $GLOBALS['FILE_PATH'] . 'templates/',
     'escrow'          => $GLOBALS['FILE_PATH'] . 'templates/escrow/',
     'member'          => $GLOBALS['FILE_PATH'] . 'templates/member/',
@@ -38,7 +38,7 @@ $smarty->setTemplateDir(array(
     'notify'          => $GLOBALS['FILE_PATH'] . 'templates/notify/',
     'HR'              => $GLOBALS['FILE_PATH'] . 'templates/HR/',
     'includes/escrow' => $GLOBALS['FILE_PATH'] . 'templates/includes/escrow/',
-));
+]);
 
 $smarty->caching = false;
-$smarty->setcache_lifetime(1);
+$smarty->setCacheLifetime(1);
