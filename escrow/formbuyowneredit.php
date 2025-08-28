@@ -1,7 +1,7 @@
 ﻿<?php
-// 暫時隱藏 PHP Warning 警告
-error_reporting(E_ERROR | E_PARSE);
-ini_set('display_errors', 1);
+// 生產環境錯誤報告設定
+error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+ini_set('display_errors', 0);
 
 require_once dirname(__DIR__) . '/configs/config.class.php';
 require_once dirname(__DIR__) . '/class/SmartyMain.class.php';
@@ -125,13 +125,13 @@ while (! $rs->EOF) {
 
     // 檢查並處理 land_movedate
     $land_movedate = isset($data_property[$i]['land_movedate']) ? $data_property[$i]['land_movedate'] : '';
-    if (preg_match("/0000\-00\-00/", $land_movedate)) {$data_property[$i]['land_movedate'] = '';}
-    $data_property[$i]['land_movedate'] = $advance->ConvertDateToRoc($data_property[$i]['land_movedate'], base::DATE_FORMAT_NUM_DATE);
+    if (preg_match("/0000\-00\-00/", $land_movedate)) {$land_movedate = '';}
+    $data_property[$i]['land_movedate'] = $advance->ConvertDateToRoc($land_movedate, base::DATE_FORMAT_NUM_DATE);
 
     // 檢查並處理 cRentDate
     $cRentDate = isset($data_property[$i]['cRentDate']) ? $data_property[$i]['cRentDate'] : '';
-    if (preg_match("/0000\-00\-00/", $cRentDate)) {$data_property[$i]['cRentDate'] = '';}
-    $data_property[$i]['cRentDate'] = $advance->ConvertDateToRoc($data_property[$i]['cRentDate'], base::DATE_FORMAT_NUM_DATE);
+    if (preg_match("/0000\-00\-00/", $cRentDate)) {$cRentDate = '';}
+    $data_property[$i]['cRentDate'] = $advance->ConvertDateToRoc($cRentDate, base::DATE_FORMAT_NUM_DATE);
 
     if (preg_match("/0000\-00\-00/", $data_property[$i]['cClosingDay'])) {$data_property[$i]['cClosingDay'] = '';} else { $data_property[$i]['cClosingDay'] = $advance->ConvertDateToRoc($data_property[$i]['cClosingDay'], base::DATE_FORMAT_NUM_DATE);}
 
@@ -1201,6 +1201,7 @@ for ($j = 1; $j < 7; $j++) {
 ##
 
 //表格顏色區分
+$cindex = 0; // 初始化顏色索引變數
 if ((($cindex + 1) % 2) == 1) {
     $colorIndex  = 'background-color:#FFFFFF;';
     $colorIndex1 = '';
@@ -1241,6 +1242,8 @@ while (! $rs->EOF) {
 }
 
 //取得保證號碼之所有交換票據資料
+$_cheque = []; // 先初始化陣列
+
 if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55006/", $data_case['cEscrowBankAccount'])) { //若為一銀的案件，則加入票據資料
     $sql = 'SELECT * FROM tExpense_cheque WHERE eDepAccount = "00' . $data_case['cEscrowBankAccount'] . '" AND eTradeStatus IN(0,10,11,20,40,49) ORDER BY eTradeDate ASC; ';
     $rs  = $conn->Execute($sql);
@@ -1502,7 +1505,7 @@ for ($j = 0; $j < count($income_arr); $j++) {
     $arr[$j]['income']   = substr($income_arr[$j]['eLender'], 0, -2) + 1 - 1;
     $arr[$j]['outgoing'] = substr($income_arr[$j]['eDebit'], 0, -2) + 1 - 1;
 
-    if ($income_arr[$j]['cheque'] == 1) {
+    if (isset($income_arr[$j]['cheque']) && $income_arr[$j]['cheque'] == 1) {
         $arr[$j]['detail'] = '支票' . $income_arr[$j]['ePayTitle'];
     } else if ($income_arr[$j]['eStatusRemark'] == '0') {
         $arr[$j]['detail'] = $income_arr[$j]['ePayTitle'];
@@ -1514,12 +1517,12 @@ for ($j = 0; $j < count($income_arr); $j++) {
     $arr[$j]['remark']       = (! empty($income_arr[$j]['eRemarkContentSp'])) ? $income_arr[$j]['eRemarkContentSp'] : $income_arr[$j]['eRemarkContent'];
     $arr[$j]['obj']          = '1';                   // 1 表示為收入
     $arr[$j]['expId']        = $income_arr[$j]['id']; //入帳ID
-    $arr[$j]['eId']          = $income_arr[$j]['eId'];
+    $arr[$j]['eId']          = isset($income_arr[$j]['eId']) ? $income_arr[$j]['eId'] : '';
     $arr[$j]['eTradeStatus'] = $income_arr[$j]['eTradeStatus'];
-    $arr[$j]['show']         = $income_arr[$j]['eShow'];
-    $arr[$j]['cheque']       = $income_arr[$j]['cheque'];
+    $arr[$j]['show']         = isset($income_arr[$j]['eShow']) ? $income_arr[$j]['eShow'] : '';
+    $arr[$j]['cheque']       = isset($income_arr[$j]['cheque']) ? $income_arr[$j]['cheque'] : 0;
 
-    if ($income_arr[$j]['cheque'] == 1) {
+    if (isset($income_arr[$j]['cheque']) && $income_arr[$j]['cheque'] == 1) {
         if (($income_arr[$j]['eCheckDate'] != '') && ($income_arr[$j]['eCheckDate'] != '0000000')) {
             $_tDate            = tDate_check($income_arr[$j]['eCheckDate'], 'md', 'b', '/', 1, 0);
             $arr[$j]['remark'] = '<font color="red">※未兌現、預計' . $_tDate . '兌現。(NT$' . number_format(($arr[$j]['income'] + 1 - 1)) . ' 不可動用)</font>';
@@ -1667,6 +1670,12 @@ for ($i = 0; $i < $max; $i++) {
     }
 }
 
+// 初始化變數
+$total         = 0;
+$incomeTotal   = 0;
+$outgoingTotal = 0;
+$tbl           = '';
+
 // 建立帳務明細表格
 for ($i = 0; $i < $max; $i++) {
     $color = ($i % 2 == 0) ? $colorIndex : $colorIndex1;
@@ -1700,7 +1709,7 @@ for ($i = 0; $i < $max; $i++) {
 
         $tbl .= '<td>
 					<span style="float:left;">
-					' . $arr[$i]['detail'] . $correct . '<span style="font-size:9pt;color:red;">' . $arr[$i]['taishinSp'] . '</span>&nbsp;
+					' . $arr[$i]['detail'] . $correct . '<span style="font-size:9pt;color:red;">' . (isset($arr[$i]['taishinSp']) ? $arr[$i]['taishinSp'] : '') . '</span>&nbsp;
 					</span>';
         if ($arr[$i]['cheque'] != 1) {
             $tbl .= '<span style="font-size:9pt;float:right;">
@@ -1828,8 +1837,14 @@ function transfer($conn, $pid)
     $sql = "SELECT pId,pName FROM tPeopleInfo WHERE pId = '" . $pid . "'";
     $rs  = $conn->Execute($sql);
 
-    $tmp[0] = $rs->fields['pId'];
-    $tmp[1] = $rs->fields['pName'];
+    $tmp = []; // 初始化陣列
+    if ($rs && ! $rs->EOF) {
+        $tmp[0] = $rs->fields['pId'];
+        $tmp[1] = $rs->fields['pName'];
+    } else {
+        $tmp[0] = '';
+        $tmp[1] = '';
+    }
     return $tmp;
 }
 ##
@@ -1920,8 +1935,9 @@ $sql = "SELECT
 			fAuditorTime
 		FROM
 			tFeedBackMoneyReview WHERE fCertifiedId = '" . $id . "' AND fFail = 0 ORDER BY fId DESC";
-$rs = $conn->Execute($sql);
-$i  = 0;
+$rs      = $conn->Execute($sql);
+$i       = 0;
+$delNote = []; // 將變數移到外層作用域
 
 while (! $rs->EOF) {
     $j                          = 0;
@@ -1936,7 +1952,6 @@ while (! $rs->EOF) {
             FROM tFeedBackMoneyReviewList WHERE fCertifiedId = '" . $id . "' AND fRId = '" . $SalesReview[$i]['fId'] . "'  ORDER BY fCategory ASC"; //AND fDelete = 0
     $rs2 = $conn->Execute($sql);
 
-    $delNote = [];
     while (! $rs2->EOF) {
         if ($rs2->fields['fCategory'] == 1) {
             $SalesReview[$i]['BranchName']         = $branch_type1;
@@ -2064,12 +2079,12 @@ $checkCertifiedFee = (($data_income['cCertifiedMoney'] + 10) < $cer_title) ? 0 :
 ##
 
 $undate = (substr($data_case['cEndDate'], 0, 4) + 1911) . "-" . substr($data_case['cEndDate'], 4);
-if ($data_income['cInspetor2'] > 0 && $data_case['cCaseStatus'] == 2) {
+if (isset($data_income['cInspetor2']) && $data_income['cInspetor2'] > 0 && isset($data_case['cCaseStatus']) && $data_case['cCaseStatus'] == 2) {
     $unf = 1;
-} else if (strtotime($undate) <= strtotime("2018-12-13 00:00:00") && $data_case['cCaseStatus'] == 3) {
+} else if (strtotime($undate) <= strtotime("2018-12-13 00:00:00") && isset($data_case['cCaseStatus']) && $data_case['cCaseStatus'] == 3) {
     $unf = 1;
-} else if (strtotime($undate) > strtotime("2018-12-13 00:00:00") && $data_case['cCaseStatus'] == 3) {
-    if ($data_income['cInspetor2'] > 0) {
+} else if (strtotime($undate) > strtotime("2018-12-13 00:00:00") && isset($data_case['cCaseStatus']) && $data_case['cCaseStatus'] == 3) {
+    if (isset($data_income['cInspetor2']) && $data_income['cInspetor2'] > 0) {
         $unf = 1;
     }
 }
@@ -2085,6 +2100,11 @@ $data_income['cInspetorName'] = $rs->fields['pName'];
 //買賣經紀人電話
 $sql = "SELECT * FROM tContractPhone WHERE cCertifiedId = '" . $id . "' AND (cIdentity =3 OR cIdentity = 4)";
 $rs  = $conn->Execute($sql);
+
+// 初始化陣列
+$buyerSalesPhone = [];
+$ownerSalesPhone = [];
+
 while (! $rs->EOF) {
     if ($rs->fields['cIdentity'] == 3) {
         $buyerSalesPhone[] = $rs->fields;
