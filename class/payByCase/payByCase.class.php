@@ -42,10 +42,10 @@ class PayByCase
             unset($case['sales']);
             $detail[] = $case;
 
-            if($case['cCaseFeedBackMoney'] > 0) {
-                $feedbackScrivener = $case['scrivener'];
+            if ($case['cCaseFeedBackMoney'] > 0) {
+                $feedbackScrivener  = $case['scrivener'];
                 $feedbackcScrivener = $case['cScrivener'];
-                $feedbackSales = $case['sales'];
+                $feedbackSales      = $case['sales'];
             }
         }
 
@@ -54,14 +54,15 @@ class PayByCase
             'scrivener'  => isset($feedbackScrivener) ? $feedbackScrivener : $cases[0]['scrivener'],
             'cScrivener' => isset($feedbackcScrivener) ? $feedbackcScrivener : $cases[0]['cScrivener'],
             'total'      => $this->calculateFeedbackMoney($feedback_case, $review_case),
-            'sales'      => isset($feedbackSales) ? $feedbackSales : $cases[0]['sales']
+            'sales'      => isset($feedbackSales) ? $feedbackSales : $cases[0]['sales'],
         ];
 
         return $case;
     }
     ##
 
-    private function _calculateScrFeedback($cId) {
+    private function _calculateScrFeedback($cId)
+    {
         $sql = 'SELECT
                     (SUM(a.cScrivenerSpRecall) + SUM(a.cBranchScrRecall) + SUM(a.cBranchScrRecall1) + SUM(a.cBranchScrRecall2) + SUM(a.cBranchScrRecall3)) AS total
                 FROM
@@ -375,23 +376,23 @@ class PayByCase
             $feedback_case = $this->getReviewListFeedbackMoney($rs['fId']);
         }
         //確認代書是否選擇隨案
-        if(!empty($feedback_case)) {
+        if (! empty($feedback_case)) {
             $res = $this->checkScrivenerFeedDateCat($feedback_case['cScrivener']);
         }
 
         //不回饋給代書、刪除列表通知
         if (empty($feedback_case) or ($res['sFeedDateCat'] != 2)) {
 
-            $this->payByCaseLog($cId, $feedback_case, '2', '1');//增加異動再確認
-            $this->updatePayByCaseLog($cId);//更新異動再確認
+            $this->payByCaseLog($cId, $feedback_case, '2', '1'); //增加異動再確認
+            $this->updatePayByCaseLog($cId);                     //更新異動再確認
 
             $this->removeSalesConfirmRecord($cId);
             $this->deletePayByCaseAccount($cId);
 
             $this->_writeLogConfirmList($cId, '', '不回饋給代書或不是隨案');
 
-            if(empty($this->getRealtyFeedbackMoney($cId)) and $this->_calculateScrFeedback($cId) > 0) {
-                Slack::channelSend('保證號碼：'.$cId .'沒有回饋代書，也沒有特殊回饋，刪除此隨案');
+            if (empty($this->getRealtyFeedbackMoney($cId)) and $this->_calculateScrFeedback($cId) > 0) {
+                Slack::channelSend('保證號碼：' . $cId . '沒有回饋代書，也沒有特殊回饋，刪除此隨案');
             }
 
             return true;
@@ -405,7 +406,7 @@ class PayByCase
 
         if (empty($record)) {
             //沒有業務通知列表紀錄(新增)
-            $res = $this->addSalesConfirmRecord($cId, $feedback_case['sales'], $feedback_case, $feedBackIdentity['fIdentity']);
+            $res = $this->addSalesConfirmRecord($cId, $feedback_case['sales'], $feedBackIdentity['fIdentity'], $feedback_case);
             $this->_writeLogConfirmList($cId, json_encode(['res' => $res, 'lastInsertId' => $this->conn->lastInsertId()]), '隨案列表新增');
             //異動資料調整成不顯示(軟刪除)
             $this->deletePayByCaseLog($cId, '2');
@@ -419,7 +420,7 @@ class PayByCase
                 $this->_writeLog($cId, $_compare2, $_compare1);
 
                 $this->payByCaseLog($cId, $feedback_case, '1', '0'); //更新前存log
-                $this->updateSalesConfirmRecord($cId, $scrSales, $feedback_case, $feedBackIdentity['fIdentity']);
+                $this->updateSalesConfirmRecord($cId, $scrSales, $feedBackIdentity['fIdentity'], $feedback_case);
                 $this->deletePayByCaseAccount($cId);
             }
 
@@ -442,11 +443,11 @@ class PayByCase
         $feedback_case    = $this->getRealtyFeedbackMoney($cId);
         $feedBackIdentity = $this->getFeedBackIdentity($feedback_case['cScrivener']);
         //新增隨案付款
-        return $this->addSalesConfirmRecord($cId, $feedback_case['sales'], $feedback_case, $feedBackIdentity['fIdentity'], 'S', $_SESSION['member_id']);
+        return $this->addSalesConfirmRecord($cId, $feedback_case['sales'], $feedBackIdentity['fIdentity'], $feedback_case, 'S', $_SESSION['member_id']);
     }
 
     //新增業務確認列表紀錄
-    public function addSalesConfirmRecord($cId, $sales, $detail = [], $feedBackIdentity, $target = "S", $creator = null)
+    public function addSalesConfirmRecord($cId, $sales, $feedBackIdentity, $detail = [], $target = "S", $creator = null)
     {
         unset($detail['sales']);
         $sql = 'INSERT INTO
@@ -482,7 +483,7 @@ class PayByCase
     ##
 
     //更新業務確認列表紀錄
-    public function updateSalesConfirmRecord($cId, $sales, $detail = [], $feedBackIdentity, $target = "S")
+    public function updateSalesConfirmRecord($cId, $sales, $feedBackIdentity, $detail = [], $target = "S")
     {
         $sql = 'UPDATE
                     tFeedBackMoneyPayByCase
@@ -505,7 +506,7 @@ class PayByCase
     ##
 
     //紀錄回饋金帳戶
-    public function savePayByCaseAccount($certifiedId, $bank, $target = "S", $fId)
+    public function savePayByCaseAccount($certifiedId, $bank, $fId, $target = "S")
     {
         //補上戶籍、聯絡地址
         $addr = $this->_getFeedBackAddr($bank['bankId']);
@@ -619,7 +620,7 @@ class PayByCase
     ##
 
     //更新代扣稅額與補充保費
-    public function updatePayTax($certifiedId, $target = "S", $identityNumberChange)
+    public function updatePayTax($certifiedId, $identityNumberChange, $target = "S")
     {
         $case = $this->getPayByCase($certifiedId, $target);
 
@@ -689,7 +690,7 @@ class PayByCase
     }
     ##
 
-    public function getPayByCaseWithTargetId($certifiedId, $target = "S", $targetId)
+    public function getPayByCaseWithTargetId($certifiedId, $targetId, $target = "S")
     {
         $sql = 'SELECT
                     a.fCertifiedId,
@@ -735,8 +736,8 @@ class PayByCase
         $message = '';
 
         $case = $this->getPayByCase($certifiedId, $target);
-        if($case['fMultipleFeedback'] == 1) {
-            $this->incomingWebhook($certifiedId.'雙代書隨案列表資料異動');
+        if ($case['fMultipleFeedback'] == 1) {
+            $this->incomingWebhook($certifiedId . '雙代書隨案列表資料異動');
             $message .= '[雙代書]';
         }
 
@@ -772,7 +773,7 @@ class PayByCase
     ##
 
     //更新會計審核時間
-    public function updateAccountingConfirmTime($certifiedId, $accountant, $fNHIpay, $target = "S", $tax, $NHI = 0)
+    public function updateAccountingConfirmTime($certifiedId, $accountant, $fNHIpay, $tax, $target = "S", $NHI = 0)
     {
         $sql = '
             UPDATE
@@ -925,8 +926,8 @@ class PayByCase
         $scrivener = $this->getScrivener($rs[0]['fCertifiedId']);
 
         $scrivenerOffice = $scrivener['sOffice'];
-        $scrivenerId = $scrivener['cScrivener'];
-        $total = 0;
+        $scrivenerId     = $scrivener['cScrivener'];
+        $total           = 0;
         foreach ($rs as $k => $v) {
             if (in_array($v['fCategory'], [1, 2, 3, 6])) {
                 $cases[$k]['cBranchNum']      = $this->getBranchNum($v['fCertifiedId'], $v['fCategory']);
@@ -945,13 +946,13 @@ class PayByCase
             $total                           = $v['fCaseFeedBackMoney'] + $total;
 
             //其他回饋的對象不是此案件代書
-            if($v['fCategory'] == 5 && $v['fFeedbackTarget'] == 2 && $v['fFeedbackStoreId'] != $scrivener['cScrivener']) {
-                $otherScrivener = $this->getScrivenerInfo($v['fFeedbackStoreId']);
+            if ($v['fCategory'] == 5 && $v['fFeedbackTarget'] == 2 && $v['fFeedbackStoreId'] != $scrivener['cScrivener']) {
+                $otherScrivener          = $this->getScrivenerInfo($v['fFeedbackStoreId']);
                 $cases[$k]['cScrivener'] = $otherScrivener['sId'];
-                $cases[$k]['scrivener'] = $otherScrivener['sOffice'];
-                if($v['fCaseFeedBackMoney'] > 0) {
+                $cases[$k]['scrivener']  = $otherScrivener['sOffice'];
+                if ($v['fCaseFeedBackMoney'] > 0) {
                     $scrivenerOffice = $otherScrivener['sOffice'];
-                    $scrivenerId = $otherScrivener['sId'];
+                    $scrivenerId     = $otherScrivener['sId'];
                 }
             }
         }
@@ -1062,7 +1063,7 @@ class PayByCase
                     tMemo = :certifiedId
                   AND
                     tKind = "保證費"
-                  AND 
+                  AND
                     tObjKind != "履保費先收(結案回饋)";
                 ';
 
@@ -1075,7 +1076,7 @@ class PayByCase
                 FROM
                     `tBankTrans`
                 WHERE
-                    tMemo =:certifiedId 
+                    tMemo =:certifiedId
                   AND
                     tInvoice IS NOT NULL
                     ;';
@@ -1233,12 +1234,12 @@ class PayByCase
     {
         $sql_check = 'SELECT fId FROM tFeedBackMoneyPayByCaseLog WHERE fCertifiedId = :cId AND fStatus = :status AND fKind = :kind AND fSalesConfirmId is null ;';
         $rs_check  = $this->conn->one($sql_check, [
-            'cId'        => $fCertifiedId,
-            'status'     => 1,
-            'kind'       => 2
+            'cId'    => $fCertifiedId,
+            'status' => 1,
+            'kind'   => 2,
         ]);
 
-        if(!empty($rs_check) && isset($rs_check['fId'])) {
+        if (! empty($rs_check) && isset($rs_check['fId'])) {
             $feedback_case = $this->getFeedbackCaseLog($fCertifiedId);
 
             $sql_update = '
@@ -1251,8 +1252,8 @@ class PayByCase
                     ';
 
             $this->conn->exeSql($sql_update, [
-                'fDetail2'   => json_encode($feedback_case, JSON_UNESCAPED_UNICODE),
-                'fId'        => $rs_check['fId']
+                'fDetail2' => json_encode($feedback_case, JSON_UNESCAPED_UNICODE),
+                'fId'      => $rs_check['fId'],
             ]);
         }
 

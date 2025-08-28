@@ -8,12 +8,12 @@ $company = json_decode(file_get_contents(dirname(__DIR__) . '/company.json'), tr
 
 //設定行高
 $cell_y1  = 4.5; // 內容用
-$cell_y2  = 5; // 標題用
-$cell_y3  = 1; // 手動跳行調行距用
-$cell_y4  = 5; // 內容用
-$cell_y5  = 8; // 銀行框框加大
-$cell_y6  = 4; // 注意事項用
-$cell_gap = 2; // 單元分隔用
+$cell_y2  = 5;   // 標題用
+$cell_y3  = 1;   // 手動跳行調行距用
+$cell_y4  = 5;   // 內容用
+$cell_y5  = 8;   // 銀行框框加大
+$cell_y6  = 4;   // 注意事項用
+$cell_gap = 2;   // 單元分隔用
 $line_gap = 0.4; // 雙線條畫線用
 
 $cell_pay1 = 6.4;
@@ -21,7 +21,7 @@ $cell_pay1 = 6.4;
 
 //取得隨案付款案件明細
 $paybycase = new PayByCase();
-$case      = $paybycase->getPayByCaseWithTargetId($cCertifiedId, 'S', $targetId);
+$case      = $paybycase->getPayByCaseWithTargetId($cCertifiedId, $targetId, 'S');
 $fDetail   = json_decode($case['fDetail']);
 ##
 
@@ -73,7 +73,7 @@ $rows = (count($buyer) > count($owner)) ? count($buyer) : count($owner);
 $_h   = $cell_y5 * $rows;
 ##
 
-$pdf->Open(); // 開啟建立新的 PDF 檔案
+$pdf->Open();    // 開啟建立新的 PDF 檔案
 $pdf->AddPage(); // 新增一頁
 
 $pdf->SetFontSize(14);
@@ -81,9 +81,9 @@ $pdf->Cell(190, $cell_y1, '第一建築經理(股)公司', 0, 1, 'C'); // 寫入
 $pdf->SetFontSize(12);
 $pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
 
-$pdf->SetFillColor(232, 234, 237); //設定底色
+$pdf->SetFillColor(232, 234, 237);                   //設定底色
 $pdf->Rect(10, $pdf->GetY(), 190, $cell_pay1, 'DF'); //畫框並填充顏色
-$pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
+$pdf->Cell(190, $cell_y3, '', 0, 1);                 // 手動換行
 
 $pdf->Cell(190, $cell_y1, '回饋金報表', 0, 1, 'C');
 $pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
@@ -91,20 +91,20 @@ $pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
 $pdf->Cell(12, $cell_y5, '名稱', 1, 0, 'C'); // 名稱
 $id = 'SC' . str_pad($case['detail']['cScrivener'], 4, '0', STR_PAD_LEFT);
 $pdf->Cell(88, $cell_y5, $id . '-' . $case['detail']['scrivener'], 1, 'C'); // 編號、事務所
-$pdf->Cell(20, $cell_y5, '專屬顧問', 1, 0, 'C'); // 專屬顧問
-$pdf->Cell(16, $cell_y5, $salesName, 1, 0, 'C'); // 業務員姓名
-$pdf->Cell(28, $cell_y5, '專屬顧問電話', 1, 0, 'C'); // 專屬顧問電話
-$pdf->Cell(26, $cell_y5, $salesMobile, 1, 0, 'C'); // 業務員手機
+$pdf->Cell(20, $cell_y5, '專屬顧問', 1, 0, 'C');                        // 專屬顧問
+$pdf->Cell(16, $cell_y5, $salesName, 1, 0, 'C');                            // 業務員姓名
+$pdf->Cell(28, $cell_y5, '專屬顧問電話', 1, 0, 'C');                  // 專屬顧問電話
+$pdf->Cell(26, $cell_y5, $salesMobile, 1, 0, 'C');                          // 業務員手機
 $pdf->Ln();
 
-$pdf->Cell(12, $cell_y5, '序號', 1, 0, 'C'); // 序號
-$pdf->Cell(24, $cell_y5, '結案日期', 1, 0, 'C'); // 結案日期
-$pdf->Cell(24, $cell_y5, '保證號碼', 1, 0, 'C'); // 保證號碼
-$pdf->Cell(30, $cell_y5, '買方', 1); // 買方
-$pdf->Cell(30, $cell_y5, '賣方', 1); // 賣方
+$pdf->Cell(12, $cell_y5, '序號', 1, 0, 'C');          // 序號
+$pdf->Cell(24, $cell_y5, '結案日期', 1, 0, 'C');    // 結案日期
+$pdf->Cell(24, $cell_y5, '保證號碼', 1, 0, 'C');    // 保證號碼
+$pdf->Cell(30, $cell_y5, '買方', 1);                  // 買方
+$pdf->Cell(30, $cell_y5, '賣方', 1);                  // 賣方
 $pdf->Cell(24, $cell_y5, '買賣總價金', 1, 0, 'C'); // 買賣總價金
-$pdf->Cell(24, $cell_y5, '保證費', 1, 0, 'C'); // 保證費
-$pdf->Cell(22, $cell_y5, '回饋金額', 1, 0, 'C'); // 回饋金額
+$pdf->Cell(24, $cell_y5, '保證費', 1, 0, 'C');       // 保證費
+$pdf->Cell(22, $cell_y5, '回饋金額', 1, 0, 'C');    // 回饋金額
 $pdf->Ln();
 
 $feedBackMoneyTotal = 0; //回饋金總金額
@@ -198,20 +198,20 @@ $pdf->SetY($_Y);
 
 //給付明細
 $pdf->Rect(10, $pdf->GetY(), 190, $cell_pay1, 'DF'); //畫框並填充顏色
-$pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
+$pdf->Cell(190, $cell_y3, '', 0, 1);                 // 手動換行
 $pdf->Cell(190, $cell_y1, '給付明細', 0, 1, 'L');
 $pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
 
-$pdf->Cell(30, $cell_y5, '回饋金總計', 1); // 回饋金總計
+$pdf->Cell(30, $cell_y5, '回饋金總計', 1);                               // 回饋金總計
 $pdf->Cell(160, $cell_y5, 'NT$ ' . number_format($feedBackMoneyTotal, 0), 1); //
 $pdf->Ln();
 
-$pdf->Cell(30, $cell_y5, '扣繳稅額', 1); // 扣繳稅額
+$pdf->Cell(30, $cell_y5, '扣繳稅額', 1);                   // 扣繳稅額
 $pdf->Cell(160, $cell_y5, 'NT$ ' . number_format($tax, 0), 1); //
 $pdf->Ln();
 
-if ($case['fType'] == 2) { //本國自然人須代扣
-    $pdf->Cell(30, $cell_y5, '二代健保', 1); // 二代健保
+if ($case['fType'] == 2) {                                        //本國自然人須代扣
+    $pdf->Cell(30, $cell_y5, '二代健保', 1);                      // 二代健保
     $pdf->Cell(160, $cell_y5, 'NT$ ' . number_format($NHITax, 0), 1); //
     $pdf->Ln();
 }
@@ -229,19 +229,19 @@ $rs          = $conn->Execute($sql);
 $bank_detail = $rs->fields;
 
 $pdf->Rect(10, $pdf->GetY(), 190, $cell_pay1, 'DF'); //畫框並填充顏色
-$pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
+$pdf->Cell(190, $cell_y3, '', 0, 1);                 // 手動換行
 $pdf->Cell(190, $cell_y1, '台端約定回饋金收款帳戶', 0, 1, 'L');
 $pdf->Cell(190, $cell_y3, '', 0, 1); // 手動換行
 
-$pdf->Cell(30, $cell_y5, '總行', 1); // 總行
-$pdf->Cell(65, $cell_y5, $bank_detail['bank_main'], 1); //
-$pdf->Cell(30, $cell_y5, '分行', 1); // 分行
+$pdf->Cell(30, $cell_y5, '總行', 1);                    // 總行
+$pdf->Cell(65, $cell_y5, $bank_detail['bank_main'], 1);   //
+$pdf->Cell(30, $cell_y5, '分行', 1);                    // 分行
 $pdf->Cell(65, $cell_y5, $bank_detail['bBank4_name'], 1); //
 $pdf->Ln();
-$pdf->Cell(30, $cell_y5, '指定帳號', 1); // 指定帳號
+$pdf->Cell(30, $cell_y5, '指定帳號', 1);         // 指定帳號
 $pdf->Cell(160, $cell_y5, $case['fBankAccount'], 1); //
 $pdf->Ln();
-$pdf->Cell(30, $cell_y5, '戶名', 1); // 戶名
+$pdf->Cell(30, $cell_y5, '戶名', 1);                   // 戶名
 $pdf->Cell(160, $cell_y5, $case['fBankAccountName'], 1); //
 $pdf->Ln();
 

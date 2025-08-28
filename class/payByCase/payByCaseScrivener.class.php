@@ -53,7 +53,7 @@ class PayByCaseScrivener
     ##
 
     //取得地政士維護回饋金帳戶資訊
-    public function getFeedBackBank($sId, $type = 1, $fId = 0 )
+    public function getFeedBackBank($sId, $type = 1, $fId = 0)
     {
         $sql = 'SELECT
                     a.fId,
@@ -72,7 +72,7 @@ class PayByCaseScrivener
                     AND a.fStoreId = :sId
                     AND a.fStatus = 0
                     AND a.fStop = 0 ';
-        if(0 != $fId) {
+        if (0 != $fId) {
             $sql .= ' AND a.fId = ' . $fId;
         }
 
@@ -138,11 +138,11 @@ class PayByCaseScrivener
         $certifiedIds = array_column($cases, 'certifiedId'); //取出保證號碼
         $trans_cases  = $this->getTransCaseByScrivener($certifiedIds);
 
-        return array_values( //重新排序鍵值
+        return array_values(                                    //重新排序鍵值
             array_filter($cases, function ($v) use ($trans_cases) { //將不存在tBankTrans的案件挑出來
                 $remove_cids = array_column($trans_cases, 'bCertifiedId');
 
-                if (!in_array($v['certifiedId'], $remove_cids)) {
+                if (! in_array($v['certifiedId'], $remove_cids)) {
                     return $v;
                 }
             })
@@ -153,9 +153,9 @@ class PayByCaseScrivener
     //確認案件是否出款
     public function affectCase($certifiedId)
     {
-        $cases = $this->getAffectCase($certifiedId);
+        $cases          = $this->getAffectCase($certifiedId);
         $certifiedIds[] = $certifiedId;
-        $transCases  = $this->getTransCaseByScrivener($certifiedIds);
+        $transCases     = $this->getTransCaseByScrivener($certifiedIds);
 
         return empty($transCases) ? $cases : [];
     }
@@ -261,7 +261,7 @@ class PayByCaseScrivener
         if ($bankCount == 1) { //地政士維護裡的回饋金帳戶只有一筆，直接覆蓋
             array_map(function ($v) use ($banks, $pay_by_case) {
                 $banks = array_pop($banks); //取出一筆(為防key不對，所以用pop方式取出)
-                //證件號碼有異動
+                                            //證件號碼有異動
                 $identityNumberChange = 0;
                 $bankAccount          = $this->getPayByCaseBankAccount($v['certifiedId']);
 
@@ -278,8 +278,8 @@ class PayByCaseScrivener
                     'idNumber'    => $banks['fIdentityNumber'],
                 ]);
 
-                $pay_by_case->updatePayTax($v['certifiedId'], 'S', $identityNumberChange); //更新代扣稅額與補充保費
-                //通知會計
+                $pay_by_case->updatePayTax($v['certifiedId'], $identityNumberChange, 'S'); //更新代扣稅額與補充保費
+                                                                                           //通知會計
                 $pay_by_case->needAccountingConfirm($v['certifiedId']);
                 ##
             }, $cases);
@@ -287,10 +287,10 @@ class PayByCaseScrivener
 
         if ($bankCount > 1) { //地政士維護裡的回饋金帳戶超過一筆以上、刪除帳戶資訊並恢復待確認
             array_map(function ($v) use ($banks, $pay_by_case) {
-                if(!$pay_by_case->checkBankLoansDate($v['certifiedId'])) {
-                    $pay_by_case->deletePayByCaseAccount($v['certifiedId'], 'S'); //刪除銀行帳戶資料
+                if (! $pay_by_case->checkBankLoansDate($v['certifiedId'])) {
+                    $pay_by_case->deletePayByCaseAccount($v['certifiedId'], 'S');   //刪除銀行帳戶資料
                     $pay_by_case->removeSalesConfirmRecord($v['certifiedId'], 'S'); //刪除payByCase紀錄
-                    $pay_by_case->salesConfirmList($v['certifiedId']); //新增payByCase紀錄
+                    $pay_by_case->salesConfirmList($v['certifiedId']);              //新增payByCase紀錄
                 }
             }, $cases);
         }
@@ -331,7 +331,7 @@ class PayByCaseScrivener
 
         $path = dirname(dirname(__DIR__)) . '/log/paybycase';
 
-        if (!is_dir($path)) {
+        if (! is_dir($path)) {
             mkdir($path, 0777, true);
         }
         $fw = fopen($path . '/' . date("Ymd") . '.log', 'a+');

@@ -10,10 +10,10 @@ use First1\V1\PayByCase\PayByCase;
 use First1\V1\Util\Util;
 
 //傳入參數
-$cId = $_POST['cId']; //保證號碼
+$cId     = $_POST['cId']; //保證號碼
 $fNHIpay = $_POST['fNHIpay'];
 
-if (!preg_match("/^\d{9}$/", $cId)) {
+if (! preg_match("/^\d{9}$/", $cId)) {
     exit(Util::jsonResponse(400, 'Invalid cId'));
 }
 ##
@@ -28,12 +28,12 @@ try {
     $paybycase = new PayByCase;
 
     $feedBackMoneyInfo = $paybycase->getPayByCase($cId);
-    $tax = $paybycase->feedbackIncomeTax($feedBackMoneyInfo['detail']['total'], $feedBackMoneyInfo['fType']);
-    if('Y' == $fNHIpay) {
+    $tax               = $paybycase->feedbackIncomeTax($feedBackMoneyInfo['detail']['total'], $feedBackMoneyInfo['fType']);
+    if ('Y' == $fNHIpay) {
         $NHI = $paybycase->feedbackNHITax($feedBackMoneyInfo['detail']['total'], $feedBackMoneyInfo['fType']);
     }
 
-    $paybycase->updateAccountingConfirmTime($cId, $_SESSION['member_id'], $fNHIpay,'S', $tax, $NHI);
+    $paybycase->updateAccountingConfirmTime($cId, $_SESSION['member_id'], $fNHIpay, $tax, 'S', $NHI);
     ##
 
     $conn->endTransaction();

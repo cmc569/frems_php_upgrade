@@ -31,7 +31,7 @@ if (empty($id)) {
 }
 
 //20230325 指定顯示的頁籤
-$_tabs = preg_match("/^\d+$/", $_POST['_tabs']) ? $_POST['_tabs'] : '0';
+$_tabs = isset($_POST['_tabs']) && preg_match("/^\d+$/", $_POST['_tabs']) ? $_POST['_tabs'] : '0';
 ##
 
 $advance            = new Advance();
@@ -83,14 +83,14 @@ $data_furniture         = $contract->GetFurniture($id);
 $data_ascription        = $contract->GetAscription($id);
 $data_rent              = $contract->GetRent($id);
 $data_LandCategory      = $contract->GetContractLandCategory($id);
-$menu_landCategoryLand  = array(1 => '買賣標的如為農地，不得做為興建農舍、建蔽率、通行權或套繪管制使用之土地，且賣方應檢附農業用地作農業使用證明書。', 2 => '買方知悉農地存有或可能有上述情形，仍同意履行契約。(未勾選視為買方不同意)');
-$menu_landCategoryBuild = array(1 => '買賣標的如為建地，不得作為法定空地、建蔽率、容積率或通行權使用之土地，且須可申請為建造之建築用地，並應提供賣方或第三人土地使用權同意書(若無則免除)使買方得申請建造興建房屋，縱土地完成移轉登記予買方，賣方仍應擔保前述責任', 2 => '買方知悉建地存有或可能有上述情形，仍同意履行契約。(未勾選視為買方不同意) ');
+$menu_landCategoryLand  = [1 => '買賣標的如為農地，不得做為興建農舍、建蔽率、通行權或套繪管制使用之土地，且賣方應檢附農業用地作農業使用證明書。', 2 => '買方知悉農地存有或可能有上述情形，仍同意履行契約。(未勾選視為買方不同意)'];
+$menu_landCategoryBuild = [1 => '買賣標的如為建地，不得作為法定空地、建蔽率、容積率或通行權使用之土地，且須可申請為建造之建築用地，並應提供賣方或第三人土地使用權同意書(若無則免除)使買方得申請建造興建房屋，縱土地完成移轉登記予買方，賣方仍應擔保前述責任', 2 => '買方知悉建地存有或可能有上述情形，仍同意履行契約。(未勾選視為買方不同意) '];
 
-$menu_LandFee = array(1 => '買方負擔', 2 => '賣方負擔');
+$menu_LandFee = [1 => '買方負擔', 2 => '賣方負擔'];
 
 //國籍代碼
 $list_countrycode = $contract->GetCountryCode();
-$menu_countrycode = array();
+$menu_countrycode = [];
 
 $menu_countrycode = $contract->ConvertOption($list_countrycode, 'cCode', 'cCountry');
 array_unshift($menu_countrycode, '請選擇');
@@ -104,7 +104,7 @@ $menu_categorycontract   = $contract->GetCategoryContract();
 //停車位判斷
 $tmp = $contract->GetParking($id);
 
-if ($tmp[0]['cId']) {
+if (! empty($tmp) && isset($tmp[0]['cId']) && $tmp[0]['cId']) {
     $parking = 1;
 } else {
     $parking = 0;
@@ -115,14 +115,18 @@ $sql = "SELECT * FROM tContractProperty WHERE cCertifiedId='" . $id . "'";
 $rs  = $conn->Execute($sql);
 
 $i = 0;
-while (!$rs->EOF) {
+while (! $rs->EOF) {
 
     $data_property[$i] = $rs->fields;
 
-    if (preg_match("/0000\-00\-00/", $data_property[$i]['land_movedate'])) {$data_property[$i]['land_movedate'] = '';}
+    // 檢查並處理 land_movedate
+    $land_movedate = isset($data_property[$i]['land_movedate']) ? $data_property[$i]['land_movedate'] : '';
+    if (preg_match("/0000\-00\-00/", $land_movedate)) {$data_property[$i]['land_movedate'] = '';}
     $data_property[$i]['land_movedate'] = $advance->ConvertDateToRoc($data_property[$i]['land_movedate'], base::DATE_FORMAT_NUM_DATE);
 
-    if (preg_match("/0000\-00\-00/", $v['cRentDate'])) {$data_property[$i]['cRentDate'] = '';}
+    // 檢查並處理 cRentDate
+    $cRentDate = isset($data_property[$i]['cRentDate']) ? $data_property[$i]['cRentDate'] : '';
+    if (preg_match("/0000\-00\-00/", $cRentDate)) {$data_property[$i]['cRentDate'] = '';}
     $data_property[$i]['cRentDate'] = $advance->ConvertDateToRoc($data_property[$i]['cRentDate'], base::DATE_FORMAT_NUM_DATE);
 
     if (preg_match("/0000\-00\-00/", $data_property[$i]['cClosingDay'])) {$data_property[$i]['cClosingDay'] = '';} else { $data_property[$i]['cClosingDay'] = $advance->ConvertDateToRoc($data_property[$i]['cClosingDay'], base::DATE_FORMAT_NUM_DATE);}
@@ -157,7 +161,7 @@ while (!$rs->EOF) {
     $sql = 'SELECT cBuildingSession, cBuildingSessionExt, cBuildingLandNo FROM tContractPropertyBuildingLandNo WHERE cCertifiedId = "' . $id . '" AND cItem = "' . $data_property[$i]['cItem'] . '";';
     $_rs = $conn->Execute($sql);
 
-    while (!$_rs->EOF) {
+    while (! $_rs->EOF) {
         $data_property[$i]['buildingLand'][] = $_rs->fields;
         $_rs->MoveNext();
     }
@@ -174,7 +178,7 @@ $sql = 'SELECT lId, lItem FROM tLegalItem ORDER BY lId ASC;';
 $rs  = $conn->Execute($sql);
 
 $menu_legal_items = [0 => '  '];
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $menu_legal_items[$rs->fields['lId']] = $rs->fields['lItem'];
     $rs->MoveNext();
 }
@@ -185,7 +189,7 @@ $sql = 'SELECT a.lId, a.lCertifiecId, a.lItem, (SELECT lItem FROM tLegalItem WHE
 $rs  = $conn->Execute($sql);
 
 $legal_record = [];
-if (!$rs->EOF) {
+if (! $rs->EOF) {
     $legal_record = $rs->fields;
 }
 
@@ -282,8 +286,12 @@ $int_money = 0;
 //取得其他買賣方利息金額(增加查詢姓名及發票金額)
 $sql = 'SELECT cInterestMoney,cInterestMoneyCheck,cInvoiceMoney,cInvoiceMoneyCheck,cName,cIdentity,cInvoiceDonate,cId,cInvoicePrint, cIdentifyId FROM tContractOthers WHERE cCertifiedId="' . $id . '" ORDER BY cId ASC;';
 
+// 初始化陣列變數
+$buyer_other = [];
+$owner_other = [];
+
 $rs = $conn->Execute($sql);
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     if ($rs->fields['cIdentity'] == 1) {
         $buyer_other[] = $rs->fields;
     } else if ($rs->fields['cIdentity'] == 2) {
@@ -342,7 +350,7 @@ if ($rs->RecordCount() > 0) {
     $rs  = $conn->Execute($sql);
 
     $i = 0;
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $data_int_another[] = $rs->fields;
         $int_money += $rs->fields['cInterestMoney'] + 1 - 1;
 
@@ -439,7 +447,7 @@ $menu_reportupload       = ['0' => '預設上傳', '1' => '關閉不上傳(品�
 $list_categorybank_twhg  = $contract->GetContractBank();
 $menu_categorybank_twhg  = $contract->ConvertOption($list_categorybank_twhg, 'cBankCode', 'bankName');
 $list_scrivener          = $scrivener->GetListScrivener();
-$menu_scrivener          = array();
+$menu_scrivener          = [];
 $menu_scrivener[0]       = '--------';
 
 foreach ($list_scrivener as $k => $v) {
@@ -495,32 +503,32 @@ if (($data_case['cCaseStatus'] == '0') || ($data_case['cCaseStatus'] == '1') || 
 
 //取得設定是否回饋
 $feedback['1']  = ' checked="checked"'; //回饋(0)
-$feedback['2']  = ''; //不回饋(1)
+$feedback['2']  = '';                   //不回饋(1)
 $feedback['11'] = ' checked="checked"'; //回饋(0)
-$feedback['12'] = ''; //不回饋(1)
+$feedback['12'] = '';                   //不回饋(1)
 $feedback['21'] = ' checked="checked"'; //回饋(0)
-$feedback['22'] = ''; //不回饋(1)
+$feedback['22'] = '';                   //不回饋(1)
 $feedback['31'] = ' checked="checked"'; //回饋(0)
-$feedback['32'] = ''; //不回饋(1)
+$feedback['32'] = '';                   //不回饋(1)
 
 if ($data_case['cCaseFeedback'] == '1') { //-->不回饋
-    $feedback['1'] = ''; //回饋(0)
-    $feedback['2'] = ' checked="checked"'; //不回饋(1)
+    $feedback['1'] = '';                      //回饋(0)
+    $feedback['2'] = ' checked="checked"';    //不回饋(1)
 }
 
 if ($data_case['cCaseFeedback1'] == '1') { //-->不回饋
-    $feedback['11'] = ''; //回饋(0)
-    $feedback['12'] = ' checked="checked"'; //不回饋(1)
+    $feedback['11'] = '';                      //回饋(0)
+    $feedback['12'] = ' checked="checked"';    //不回饋(1)
 }
 
 if ($data_case['cCaseFeedback2'] == '1') { //-->不回饋
-    $feedback['21'] = ''; //回饋(0)
-    $feedback['22'] = ' checked="checked"'; //不回饋(1)
+    $feedback['21'] = '';                      //回饋(0)
+    $feedback['22'] = ' checked="checked"';    //不回饋(1)
 }
 
 if ($data_case['cCaseFeedback3'] == '1') { //-->不回饋
-    $feedback['31'] = ''; //回饋(0)
-    $feedback['32'] = ' checked="checked"'; //不回饋(1)
+    $feedback['31'] = '';                      //回饋(0)
+    $feedback['32'] = ' checked="checked"';    //不回饋(1)
 }
 ##
 
@@ -536,7 +544,7 @@ if ($_SESSION['member_pFeedBackModify'] == '1' && $_SESSION['member_pCaseFeedBac
 
 //回饋金代書關閉欄位
 $scrivenerDisabled = '';
-if($data_case['cFeedBackScrivenerClose'] == 1) {
+if ($data_case['cFeedBackScrivenerClose'] == 1) {
     $scrivenerDisabled = ' disabled';
 }
 
@@ -551,7 +559,7 @@ if ($data_case['cCaseFeedBackModifier'] == '') {
 ##
 
 //取得地政士資料
-$scr = array();
+$scr = [];
 $sql = 'SELECT * FROM tScrivener WHERE sId="' . $data_scrivener['cScrivener'] . '";';
 $rs  = $conn->Execute($sql);
 $scr = $rs->fields;
@@ -564,7 +572,7 @@ $scr_sFeedbackMoney      = $rs->fields['sFeedbackMoney'];
 
 //取得第一組仲介資料
 if ($data_realstate['cBranchNum'] > 0) {
-    $rel1 = array();
+    $rel1 = [];
     $sql  = 'SELECT * FROM tBranch WHERE bId="' . $data_realstate['cBranchNum'] . '";';
     $rs   = $conn->Execute($sql);
     $rel1 = $rs->fields;
@@ -579,55 +587,97 @@ if ($data_realstate['cBranchNum'] > 0) {
 ##
 
 //取得第二組仲介資料
+$rel2 = []; // 初始化為空陣列，設置預設值
 if ($data_realstate['cBranchNum1'] > 0) {
-    $rel2 = array();
-    $sql  = 'SELECT * FROM tBranch WHERE bId="' . $data_realstate['cBranchNum1'] . '";';
-    $rs   = $conn->Execute($sql);
-    $rel2 = $rs->fields;
+    $sql = 'SELECT * FROM tBranch WHERE bId="' . $data_realstate['cBranchNum1'] . '";';
+    $rs  = $conn->Execute($sql);
+    if ($rs && ! $rs->EOF) {
+        $rel2 = $rs->fields;
 
-    //回饋對象資料 20170606 改用欄位(bCooperationHas)去看
-    $data_feedData2       = FeedBackData($data_realstate['cBranchNum1'], 2);
-    $data_feedDataCount2  = $rel2['bCooperationHas'];
-    $data_bFeedbackMoney2 = $rel2['bFeedbackMoney']; //未收足也要回饋
+        //回饋對象資料 20170606 改用欄位(bCooperationHas)去看
+        $data_feedData2       = FeedBackData($data_realstate['cBranchNum1'], 2);
+        $data_feedDataCount2  = $rel2['bCooperationHas'];
+        $data_bFeedbackMoney2 = $rel2['bFeedbackMoney']; //未收足也要回饋
 
-    $rel2['note'] = branchNote($data_realstate['cBranchNum1']);
+        $rel2['note'] = branchNote($data_realstate['cBranchNum1']);
+    }
+}
+
+// 確保 $rel2 有必要的預設值
+if (empty($rel2)) {
+    $rel2 = [
+        'bZip'         => '',
+        'bZip2'        => '',
+        'bZip3'        => '',
+        'bStatus'      => '',
+        'bAccountNum5' => '',
+        'bAccountNum6' => '',
+    ];
 }
 ##
 
 //取得第三組仲介資料
+$rel3 = []; // 初始化為空陣列
 if ($data_realstate['cBranchNum2'] > 0) {
-    $rel3 = array();
-    $sql  = 'SELECT * FROM tBranch WHERE bId="' . $data_realstate['cBranchNum2'] . '";';
-    $rs   = $conn->Execute($sql);
-    $rel3 = $rs->fields;
+    $sql = 'SELECT * FROM tBranch WHERE bId="' . $data_realstate['cBranchNum2'] . '";';
+    $rs  = $conn->Execute($sql);
+    if ($rs && ! $rs->EOF) {
+        $rel3 = $rs->fields;
 
-    //回饋對象資料
-    $data_feedData2       = FeedBackData($data_realstate['cBranchNum2'], 2);
-    $data_feedDataCount3  = $rel3['bCooperationHas']; //
-    $data_bFeedbackMoney3 = $rel3['bFeedbackMoney']; //未收足也要回饋
+        //回饋對象資料
+        $data_feedData2       = FeedBackData($data_realstate['cBranchNum2'], 2);
+        $data_feedDataCount3  = $rel3['bCooperationHas']; //
+        $data_bFeedbackMoney3 = $rel3['bFeedbackMoney'];  //未收足也要回饋
 
-    $rel3['note'] = branchNote($data_realstate['cBranchNum2']);
+        $rel3['note'] = branchNote($data_realstate['cBranchNum2']);
+    }
+}
+
+// 確保 $rel3 有必要的預設值
+if (empty($rel3)) {
+    $rel3 = [
+        'bZip'         => '',
+        'bZip2'        => '',
+        'bZip3'        => '',
+        'bStatus'      => '',
+        'bAccountNum5' => '',
+        'bAccountNum6' => '',
+    ];
 }
 ##
 
 //取得第四組仲介資料
+$rel4 = []; // 初始化為空陣列
 if ($data_realstate['cBranchNum3'] > 0) {
-    $rel4 = array();
-    $sql  = 'SELECT * FROM tBranch WHERE bId="' . $data_realstate['cBranchNum3'] . '";';
-    $rs   = $conn->Execute($sql);
-    $rel4 = $rs->fields;
+    $sql = 'SELECT * FROM tBranch WHERE bId="' . $data_realstate['cBranchNum3'] . '";';
+    $rs  = $conn->Execute($sql);
+    if ($rs && ! $rs->EOF) {
+        $rel4 = $rs->fields;
 
-    //回饋對象資料
-    $data_feedData3       = FeedBackData($data_realstate['cBranchNum3'], 2);
-    $data_feedDataCount4  = $rel4['bCooperationHas']; //
-    $data_bFeedbackMoney4 = $rel4['bFeedbackMoney']; //未收足也要回饋
+        //回饋對象資料
+        $data_feedData3       = FeedBackData($data_realstate['cBranchNum3'], 2);
+        $data_feedDataCount4  = $rel4['bCooperationHas']; //
+        $data_bFeedbackMoney4 = $rel4['bFeedbackMoney'];  //未收足也要回饋
 
-    $rel4['note'] = branchNote($data_realstate['cBranchNum3']);
+        $rel4['note'] = branchNote($data_realstate['cBranchNum3']);
+    }
+}
+
+// 確保 $rel4 有必要的預設值
+if (empty($rel4)) {
+    $rel4 = [
+        'bZip'         => '',
+        'bZip2'        => '',
+        'bZip3'        => '',
+        'bStatus'      => '',
+        'bAccountNum5' => '',
+        'bAccountNum6' => '',
+    ];
 }
 ##
 
 //設定仲介服務對象
-$STargetOption   = array(1 => '買賣方', 2 => '賣方', 3 => '買方');
+$STargetOption   = [1 => '買賣方', 2 => '賣方', 3 => '買方'];
 $cServiceTarget  = $data_realstate['cServiceTarget'];
 $cServiceTarget1 = $data_realstate['cServiceTarget1'];
 $cServiceTarget2 = $data_realstate['cServiceTarget2'];
@@ -638,8 +688,8 @@ $cServiceTarget3 = $data_realstate['cServiceTarget3'];
 $data_owner['cRegistAddr'] = filterCityAreaName($conn, $data_owner['cRegistZip'], $data_owner['cRegistAddr']);
 ##
 
-$TaxReceipt = array(1 => '賣方', 2 => '買方', 3 => '無');
-$caseSales  = array(); //案件相關業務
+$TaxReceipt = [1 => '賣方', 2 => '買方', 3 => '無'];
+$caseSales  = []; //案件相關業務
 
 //地政士業務
 $sql = 'SELECT
@@ -671,10 +721,10 @@ if ($data_scrivener['sSpRecall2'] != '' && $data_case['cScrivenerSpRecall2'] == 
 
 $scrivener_brand         = $rs->fields['sBrand'];
 $menu_scrivener_sales[0] = '請選擇';
-$tmp                     = array();
-while (!$rs->EOF) {
+$tmp                     = [];
+while (! $rs->EOF) {
     $tmp[]                                   = $rs->fields['sSalesName'];
-    $caseSales[$rs->fields['sSales']]        = $rs->fields['sSales']; //地政士
+    $caseSales[$rs->fields['sSales']]        = $rs->fields['sSales'];     //地政士
     $scrivener_option[$rs->fields['sSales']] = $rs->fields['sSalesName']; //業務下拉
     $rs->MoveNext();
 }
@@ -723,8 +773,8 @@ if ($data_realstate['cBranchNum'] > 0) {
 				ASC';
     $rs = $conn->Execute($sql);
 
-    $tmp = array();
-    while (!$rs->EOF) {
+    $tmp = [];
+    while (! $rs->EOF) {
         $tmp[] = $rs->fields['bSalesName'];
         if ($data_realstate['cBranchNum'] != 505) {
             $caseSales[$rs->fields['bSales']] = $rs->fields['bSales'];
@@ -781,8 +831,8 @@ if ($data_realstate['cBranchNum1'] > 0) {
 				ASC';
     $rs = $conn->Execute($sql);
 
-    $tmp = array();
-    while (!$rs->EOF) {
+    $tmp = [];
+    while (! $rs->EOF) {
         $tmp[]                            = $rs->fields['bSalesName'];
         $caseSales[$rs->fields['bSales']] = $rs->fields['bSales'];
         $rs->MoveNext();
@@ -839,8 +889,8 @@ if ($data_realstate['cBranchNum2'] > 0) {
 
     $rs = $conn->Execute($sql);
 
-    $tmp = array();
-    while (!$rs->EOF) {
+    $tmp = [];
+    while (! $rs->EOF) {
         $tmp[]                            = $rs->fields['bSalesName'];
         $caseSales[$rs->fields['bSales']] = $rs->fields['bSales'];
         $rs->MoveNext();
@@ -896,8 +946,8 @@ if ($data_realstate['cBranchNum3'] > 0) {
 			ASC';
     $rs = $conn->Execute($sql);
 
-    $tmp = array();
-    while (!$rs->EOF) {
+    $tmp = [];
+    while (! $rs->EOF) {
         $tmp[]                            = $rs->fields['bSalesName'];
         $caseSales[$rs->fields['bSales']] = $rs->fields['bSales'];
         $rs->MoveNext();
@@ -918,9 +968,9 @@ if ($data_realstate['cBranchNum3'] > 0) {
 //業務下拉
 $sql             = "SELECT pId,pName FROM tPeopleInfo WHERE pDep IN(4,7,8) AND pJob=1";
 $rs              = $conn->Execute($sql);
-$tmp             = array();
+$tmp             = [];
 $sales_option[0] = '';
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $sales_option[$rs->fields['pId']] = $rs->fields['pName'];
     $rs->MoveNext();
 }
@@ -946,8 +996,8 @@ $sql    = '
 ';
 $rs = $conn->Execute($sql);
 
-$tmp = array();
-while (!$rs->EOF) {
+$tmp = [];
+while (! $rs->EOF) {
     if ($_SESSION['member_pDep'] == 7 || $data_case['cFeedBackClose'] == 1) {
         $tmp[] = '<span style="padding:2px;background-color:yellow;">' . $rs->fields['bSalesName'] . '</span>';
     } else {
@@ -979,8 +1029,8 @@ $sql    = '
 		cCertifiedId =' . $id . '
 ';
 $rs  = $conn->Execute($sql);
-$tmp = array();
-while (!$rs->EOF) {
+$tmp = [];
+while (! $rs->EOF) {
     if ($rs->fields['pJob'] == 2) {
         $tmp2                     = transfer($conn, $rs->fields['transfer']);
         $rs->fields['cSalesId']   = $tmp2[0];
@@ -1019,8 +1069,8 @@ $sql    = '
 		cCertifiedId =' . $id . '
 ';
 $rs  = $conn->Execute($sql);
-$tmp = array();
-while (!$rs->EOF) {
+$tmp = [];
+while (! $rs->EOF) {
     if ($rs->fields['pJob'] == 2) {
         $tmp2                     = transfer($conn, $rs->fields['transfer']);
         $rs->fields['cSalesId']   = $tmp2[0];
@@ -1075,7 +1125,7 @@ if ($data_realstate['cBrand'] != 1) {
 }
 
 //如果有仲介代書回饋比率，就顯示
-if (($data_case['cScrivenerSpRecall'] + $data_case['cBranchScrRecall'] + $data_case['cBranchScrRecall1'] + $data_case['cBranchScrRecall2'] + $data_case['cBranchScrRecall3']) > 0 or $data_case['cSpCaseFeedBackMoney'] > 0) {
+if ((floatval($data_case['cScrivenerSpRecall']) + floatval($data_case['cBranchScrRecall']) + floatval($data_case['cBranchScrRecall1']) + floatval($data_case['cBranchScrRecall2']) + floatval($data_case['cBranchScrRecall3'])) > 0 or floatval($data_case['cSpCaseFeedBackMoney']) > 0) {
     $sSpRecall = '';
 } else {
     $sSpRecall = 'none';
@@ -1088,11 +1138,11 @@ $showAffixBranch['cBrand2'] = ($data_realstate['cBrand2'] == 69) ? "" : "none";
 
 ##宜蘭宏鎰集團回饋流程(案件2仲介以上且都是宏鎰集團)
 $funcAffixBranch = '';
-$branchGroup18 = [0];
-$sql_group18 = 'SELECT bId FROM tBranch WHERE bGroup = 18';
-$rs_group18  = $conn->Execute($sql_group18);
-while (!$rs_group18->EOF) {
-    $branchGroup18[] = (int)$rs_group18->fields['bId'];
+$branchGroup18   = [0];
+$sql_group18     = 'SELECT bId FROM tBranch WHERE bGroup = 18';
+$rs_group18      = $conn->Execute($sql_group18);
+while (! $rs_group18->EOF) {
+    $branchGroup18[] = (int) $rs_group18->fields['bId'];
     $rs_group18->MoveNext();
 }
 
@@ -1100,14 +1150,14 @@ $showAffixBranch['group18Brand']  = "none";
 $showAffixBranch['group18Brand1'] = "none";
 $showAffixBranch['group18Brand2'] = "none";
 $showAffixBranch['group18Brand3'] = "none";
-if(
+if (
     $data_realstate['cBranchNum'] > 0 && $data_realstate['cBranchNum1'] > 0 &&
-    in_array($data_realstate['cBranchNum'],$branchGroup18) &&
-    in_array($data_realstate['cBranchNum1'],$branchGroup18) &&
-    in_array($data_realstate['cBranchNum2'],$branchGroup18) &&
-    in_array($data_realstate['cBranchNum3'],$branchGroup18)
-){
-    $funcAffixBranch     = "group18";
+    in_array($data_realstate['cBranchNum'], $branchGroup18) &&
+    in_array($data_realstate['cBranchNum1'], $branchGroup18) &&
+    in_array($data_realstate['cBranchNum2'], $branchGroup18) &&
+    in_array($data_realstate['cBranchNum3'], $branchGroup18)
+) {
+    $funcAffixBranch                  = "group18";
     $showAffixBranch['group18Brand']  = "";
     $showAffixBranch['group18Brand1'] = "";
     $showAffixBranch['group18Brand2'] = "";
@@ -1115,17 +1165,17 @@ if(
 }
 
 ##點交前(租客是否願意搬遷)
-$property_finish = array('1' => '租客願意搬遷', '2' => '租客不願意搬遷');
-$property_other  = array('1' => '買方自行排除', '2' => '由賣方負責');
+$property_finish = ['1' => '租客願意搬遷', '2' => '租客不願意搬遷'];
+$property_other  = ['1' => '買方自行排除', '2' => '由賣方負責'];
 ##
 
 ##契稅之歸屬
-$ascription_option  = array('1' => '地政規費', '2' => '設定規費', '3' => '印花稅', '4' => '地政士業務執行費', '5' => '公證或監證費', '6' => '簽約費', '7' => '火險及地震險費', '8' => '塗銷費', '9' => '貸款相關費用', 10 => '實價登錄費', 11 => '履保費', 12 => '土地增值稅', 13 => '契稅');
-$ascription_option2 = array('1' => '一般稅率', '2' => '自用住宅優惠稅率');
+$ascription_option  = ['1' => '地政規費', '2' => '設定規費', '3' => '印花稅', '4' => '地政士業務執行費', '5' => '公證或監證費', '6' => '簽約費', '7' => '火險及地震險費', '8' => '塗銷費', '9' => '貸款相關費用', 10 => '實價登錄費', 11 => '履保費', 12 => '土地增值稅', 13 => '契稅'];
+$ascription_option2 = ['1' => '一般稅率', '2' => '自用住宅優惠稅率'];
 ##
 
 ##
-$object_option = array('1' => '一樓/法定空地', '2' => '騎樓', '3' => '陽台', '4' => '露台', '5' => '平台', '6' => '防火巷', '7' => '地下室', '8' => '夾層', '9' => '其他');
+$object_option = ['1' => '一樓/法定空地', '2' => '騎樓', '3' => '陽台', '4' => '露台', '5' => '平台', '6' => '防火巷', '7' => '地下室', '8' => '夾層', '9' => '其他'];
 ##
 
 ##明細表(如有異動請連tran_table.php一併修改)
@@ -1157,8 +1207,8 @@ if ((($cindex + 1) % 2) == 1) {
 ##
 
 ##票據部分##
-$cheque = array();
-$income = array();
+$cheque = [];
+$income = [];
 //取得銷帳檔入帳紀錄資料
 $sql = '
 	SELECT
@@ -1179,7 +1229,7 @@ $sql = '
 $rs         = $conn->Execute($sql);
 $income_max = count($income);
 $j          = 0;
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $income[$j]          = $rs->fields;
     $income[$j]['match'] = 'x';
     $j++;
@@ -1192,7 +1242,7 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
     $rs  = $conn->Execute($sql);
 
     $x = 0;
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $_cheque[$x]          = $rs->fields;
         $_cheque[$x]['match'] = 'x';
         $x++;
@@ -1200,15 +1250,15 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
     }
 
     if (is_array($_cheque)) {
-        //檢核票據是否已兌現
+                                                   //檢核票據是否已兌現
         for ($x = 0; $x < count($_cheque); $x++) { //票據交易(8)
             for ($j = 0; $j < count($income); $j++) {
                 if (($_cheque[$x]['eDepAccount'] == $income[$j]['eDepAccount']) //保證號碼相同
-                     && ($income[$j]['eTradeCode'] == '1793') //交易代碼為1793
-                     && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit']) //支出金額相符
-                     && ($_cheque[$x]['eLender'] == $income[$j]['eLender']) //收入金額相符
-                     && ($_cheque[$x]['eTradeDate'] < $income[$j]['eTradeDate']) //票據日期須小於銷帳日期
-                     && ($income[$j]['match'] == 'x')) { //銷帳紀錄須未被配對
+                    && ($income[$j]['eTradeCode'] == '1793')                        //交易代碼為1793
+                    && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit'])            //支出金額相符
+                    && ($_cheque[$x]['eLender'] == $income[$j]['eLender'])          //收入金額相符
+                    && ($_cheque[$x]['eTradeDate'] < $income[$j]['eTradeDate'])     //票據日期須小於銷帳日期
+                    && ($income[$j]['match'] == 'x')) {                             //銷帳紀錄須未被配對
 
                     $income[$j]['match']  = '1'; //在銷帳紀錄中找到支票紀錄
                     $_cheque[$x]['match'] = '1'; //在支票紀錄中找到銷帳紀錄
@@ -1223,12 +1273,12 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
         for ($x = 0; $x < count($_cheque); $x++) { //正常交易(0)
             for ($j = 0; $j < count($income); $j++) {
                 if (($_cheque[$x]['eDepAccount'] == $income[$j]['eDepAccount']) //保證號碼相同
-                     && ($income[$j]['eTradeCode'] == '1950') //交易代碼為1950
-                     && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit']) //支出金額相符
-                     && ($_cheque[$x]['eLender'] == $income[$j]['eLender']) //收入金額相符
-                     && ($income[$j]['eTradeStatus'] == '0') //交易狀態為票據交易
-                     && ($_cheque[$x]['eTradeDate'] < $income[$j]['eTradeDate']) //票據日期須小於銷帳日期
-                     && ($income[$j]['match'] == 'x')) { //銷帳紀錄須未被配對(重要)
+                    && ($income[$j]['eTradeCode'] == '1950')                        //交易代碼為1950
+                    && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit'])            //支出金額相符
+                    && ($_cheque[$x]['eLender'] == $income[$j]['eLender'])          //收入金額相符
+                    && ($income[$j]['eTradeStatus'] == '0')                         //交易狀態為票據交易
+                    && ($_cheque[$x]['eTradeDate'] < $income[$j]['eTradeDate'])     //票據日期須小於銷帳日期
+                    && ($income[$j]['match'] == 'x')) {                             //銷帳紀錄須未被配對(重要)
 
                     $income[$j]['match']  = '1'; //在銷帳紀錄中找到支票紀錄
                     $_cheque[$x]['match'] = '1'; //在支票紀錄中找到銷帳紀錄
@@ -1240,8 +1290,8 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
     }
 
 } else if (preg_match("/^9998[56]0/", $data_case['cEscrowBankAccount'])) { //若為永豐的案件，則加入票據資料
-    //取得次交票紀錄(Time to Pay tickets)
-    $Time2Pay = array();
+                                                                               //取得次交票紀錄(Time to Pay tickets)
+    $Time2Pay = [];
 
     $sql = '
 		SELECT
@@ -1258,7 +1308,7 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
 	';
 
     $rs = $conn->Execute($sql);
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $tmp[] = $rs->fields;
         $rs->MoveNext();
     }
@@ -1298,7 +1348,7 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
     }
 
     //取得託收票紀錄(Bills for Collection)
-    $B4C = array();
+    $B4C = [];
 
     $sql = '
 		SELECT
@@ -1317,7 +1367,7 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
     $rs = $conn->Execute($sql);
 
     $x = 0;
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $B4C[$x]             = $rs->fields;
         $B4C[$x]['match']    = 'x';
         $B4C[$x]['Time2Pay'] = '1'; //保留、顯示
@@ -1357,11 +1407,11 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
         for ($x = 0; $x < count($_cheque); $x++) { //票據交易
             for ($j = 0; $j < count($income); $j++) {
                 if (($_cheque[$x]['eDepAccount'] == $income[$j]['eDepAccount']) //保證號碼相同
-                     && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit']) //支出金額相符
-                     && ($_cheque[$x]['eLender'] == $income[$j]['eLender']) //收入金額相符
-                     && ($income[$j]['eSummary'] == '票據轉入') //交易摘要為票據轉入
-                     && ($_cheque[$x]['eCheckNo'] == $income[$j]['eCheckNo']) //支票號碼相同
-                     && ($income[$j]['match'] == 'x')) { //銷帳紀錄須未被配對
+                    && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit'])            //支出金額相符
+                    && ($_cheque[$x]['eLender'] == $income[$j]['eLender'])          //收入金額相符
+                    && ($income[$j]['eSummary'] == '票據轉入')                  //交易摘要為票據轉入
+                    && ($_cheque[$x]['eCheckNo'] == $income[$j]['eCheckNo'])        //支票號碼相同
+                    && ($income[$j]['match'] == 'x')) {                             //銷帳紀錄須未被配對
 
                     $income[$j]['match']  = '1'; //在銷帳紀錄中找到支票紀錄
                     $_cheque[$x]['match'] = '1'; //在支票紀錄中找到銷帳紀錄
@@ -1371,13 +1421,13 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
             }
         }
     }
-    ##
+                                                                           ##
 } else if (preg_match("/^96988/", $data_case['cEscrowBankAccount'])) { //若為台新的案件，則加入票據資料
     $sql = 'SELECT * FROM tExpense_cheque WHERE eDepAccount = "00' . $data_case['cEscrowBankAccount'] . '" AND eTradeStatus = "0" ORDER BY eTradeDate ASC; ';
     $rs  = $conn->Execute($sql);
 
     $x = 0;
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $_cheque[$x]          = $rs->fields;
         $_cheque[$x]['match'] = 'x';
         $x++;
@@ -1390,12 +1440,12 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
         for ($x = 0; $x < count($_cheque); $x++) { //正常交易(0)
             for ($j = 0; $j < count($income); $j++) {
                 if (($_cheque[$x]['eDepAccount'] == $income[$j]['eDepAccount']) //保證號碼相同
-                     && ($income[$j]['eTradeCode'] == 'PDC') //交易代碼為 PDC 票據交易
-                     && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit']) //支出金額相符
-                     && ($_cheque[$x]['eLender'] == $income[$j]['eLender']) //收入金額相符
-                     && ($income[$j]['eTradeStatus'] == '0') //交易狀態為票據交易
-                     && ($_cheque[$x]['eTradeDate'] < $income[$j]['eTradeDate']) //票據日期須小於銷帳日期
-                     && ($income[$j]['match'] == 'x')) { //銷帳紀錄須未被配對(重要)
+                    && ($income[$j]['eTradeCode'] == 'PDC')                         //交易代碼為 PDC 票據交易
+                    && ($_cheque[$x]['eDebit'] == $income[$j]['eDebit'])            //支出金額相符
+                    && ($_cheque[$x]['eLender'] == $income[$j]['eLender'])          //收入金額相符
+                    && ($income[$j]['eTradeStatus'] == '0')                         //交易狀態為票據交易
+                    && ($_cheque[$x]['eTradeDate'] < $income[$j]['eTradeDate'])     //票據日期須小於銷帳日期
+                    && ($income[$j]['match'] == 'x')) {                             //銷帳紀錄須未被配對(重要)
 
                     $income[$j]['match']  = '1'; //在銷帳紀錄中找到支票紀錄
                     $_cheque[$x]['match'] = '1'; //在支票紀錄中找到銷帳紀錄
@@ -1412,9 +1462,9 @@ if (preg_match("/^60001/", $data_case['cEscrowBankAccount']) || preg_match("/^55
 $j = 0;
 
 if ($_cheque) {
-    for ($x = 0; $x < count($_cheque); $x++) { //將未標記之票據紀錄取出
+    for ($x = 0; $x < count($_cheque); $x++) {                                                                             //將未標記之票據紀錄取出
         if ($_cheque[$x]['eTipDate'] != '' || ($_cheque[$x]['eCheckDate'] != '0000000' && $_cheque[$x]['eCheckDate'] != '')) { //如果是託收票  以到期日加一日為兌現日
-            $_expire_date = tDate_check($_cheque[$x]['eCheckDate'], 'ymd', 'b', '-', 1, 1); //
+            $_expire_date = tDate_check($_cheque[$x]['eCheckDate'], 'ymd', 'b', '-', 1, 1);                                        //
 
         } else {
             $_expire_date = tDate_check($_cheque[$x]['eTradeDate'], 'ymd', 'b', '-', 3, 1); //票據(預計)兌現時間
@@ -1457,8 +1507,8 @@ for ($j = 0; $j < count($income_arr); $j++) {
     }
 
     //20210407 改為官網摘要附註顯示
-    $arr[$j]['remark']       = (!empty($income_arr[$j]['eRemarkContentSp'])) ? $income_arr[$j]['eRemarkContentSp'] : $income_arr[$j]['eRemarkContent'];
-    $arr[$j]['obj']          = '1'; // 1 表示為收入
+    $arr[$j]['remark']       = (! empty($income_arr[$j]['eRemarkContentSp'])) ? $income_arr[$j]['eRemarkContentSp'] : $income_arr[$j]['eRemarkContent'];
+    $arr[$j]['obj']          = '1';                   // 1 表示為收入
     $arr[$j]['expId']        = $income_arr[$j]['id']; //入帳ID
     $arr[$j]['eId']          = $income_arr[$j]['eId'];
     $arr[$j]['eTradeStatus'] = $income_arr[$j]['eTradeStatus'];
@@ -1508,13 +1558,13 @@ $exportCount = $rs->RecordCount();
 $checkOwnerNote     = 1; //確認是否符合顯示賣方備註 0:要顯示填寫
 $checkCaseEnd       = 0; //檢查是否有出結案款項 1:有出
 $checkOwnerNoteTime = 0; //檢查是否已經過修改的時間 true:超過
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $arr[$j]['date']     = ($rs->fields['tPayOk'] == '1') ? substr($rs->fields['tExport_time'], 0, 10) : ''; //20230803 調整當銀行未付款時(tPayOk=2)，即使日期有押也不能顯示日期
     $arr[$j]['detail']   = $rs->fields['tObjKind'];
     $arr[$j]['income']   = '';
     $arr[$j]['outgoing'] = $rs->fields['tMoney'];
     $arr[$j]['remark']   = $rs->fields['tTxt'];
-    $arr[$j]['obj']      = '2'; // 2 表示為支出
+    $arr[$j]['obj']      = '2';                // 2 表示為支出
     $arr[$j]['tran_id']  = $rs->fields['tId']; //出款ID
     $arr[$j]['show']     = $rs->fields['tShow'];
 
@@ -1547,9 +1597,9 @@ while (!$rs->EOF) {
 
     //賣方備註(沒賣方不用填寫;有非賣方帳戶要填寫;//結案有出賣方帳戶但其中有賣方未收錢(EX:賣1、賣2、賣3;出款只出給了賣1、賣2))
     if (($rs->fields['tObjKind'] == '點交(結案)' || $rs->fields['tObjKind'] == '解除契約' || $rs->fields['tObjKind'] == '建經發函終止') && $rs->fields['tKind'] == '賣方') {
-        $checkCaseEnd             = 1; //有出結案
+        $checkCaseEnd             = 1;                           //有出結案
         $ownerExportAccountName[] = $rs->fields['tAccountName']; //賣方出款帳戶
-        if (!in_array($rs->fields['tAccountName'], $ownerArr)) { //非賣方帳戶要顯示填寫
+        if (! in_array($rs->fields['tAccountName'], $ownerArr)) { //非賣方帳戶要顯示填寫
             $checkOwnerNote = 0;
         }
 
@@ -1581,7 +1631,7 @@ if ($exportCount == 0) {
 if ($checkCaseEnd == 1) {
     if (is_array($ownerExportAccountName)) {
         foreach ($ownerArr as $k => $v) {
-            if (!in_array($v, $ownerExportAccountName)) { //結案有出賣方帳戶但其中有賣方未收錢(EX:賣1、賣2、賣3;出款只出給了賣1、賣2)
+            if (! in_array($v, $ownerExportAccountName)) { //結案有出賣方帳戶但其中有賣方未收錢(EX:賣1、賣2、賣3;出款只出給了賣1、賣2)
                 $checkOwnerNote = 0;
             }
         }
@@ -1658,8 +1708,8 @@ for ($i = 0; $i < $max; $i++) {
         $tbl .= '</td>';
         $tbl .= '<td ' . $aa . 'id="' . $expId . '" style="text-align:right;">' . $bb . number_format($income) . '&nbsp;</td>';
     } else {
-        if($arr[$i]['detail'] == '賣方先動撥'){
-            $tbl .= '<td>' . $arr[$i]['detail'] . '<span style="font-size:9pt;color:red;">' . $arr[$i]['taishinSp'] . '<a href="bankTransConfirmCall.php?action=contract&cid='.$id.'&bid='.$arr[$i]['tran_id'].'" class="iframe" style="font-size:9pt;">(照會)</a></span>&nbsp;</td>';
+        if ($arr[$i]['detail'] == '賣方先動撥') {
+            $tbl .= '<td>' . $arr[$i]['detail'] . '<span style="font-size:9pt;color:red;">' . $arr[$i]['taishinSp'] . '<a href="bankTransConfirmCall.php?action=contract&cid=' . $id . '&bid=' . $arr[$i]['tran_id'] . '" class="iframe" style="font-size:9pt;">(照會)</a></span>&nbsp;</td>';
         } else {
             $tbl .= '<td>' . $arr[$i]['detail'] . '<span style="font-size:9pt;color:red;">' . $arr[$i]['taishinSp'] . '</span>&nbsp;</td>';
         }
@@ -1669,7 +1719,7 @@ for ($i = 0; $i < $max; $i++) {
     $tbl .= '
 		<td style="text-align:right;">' . number_format($outgoing) . '&nbsp;</td>
 		<td style="text-align:right;">' . number_format($total) . '&nbsp;</td>
-		<td>' . ltrim($arr[$i]['remark'], '+'). '&nbsp;</td>';
+		<td>' . ltrim($arr[$i]['remark'], '+') . '&nbsp;</td>';
     if ($arr[$i]['show'] == 0) {
         $ck = 'checked=checked';
 
@@ -1700,13 +1750,12 @@ $data_bankcode = $rs->fields;
 
 ##
 
-
 //發票指定對象
 $sql = "SELECT * FROM tContractInvoiceExt  WHERE cCertifiedId ='" . $id . "'";
 $rs  = $conn->Execute($sql);
 
 $i = 0;
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     if ($rs->fields['cInvoiceDonate'] == 1) {
 
         $rs->fields['cInvoiceDonate'] = '[捐贈]';
@@ -1735,7 +1784,7 @@ $individual = getIndividualFeedBack($id);
 $sql                = "SELECT pId,pName FROM tPeopleInfo WHERE pDep = 5 ORDER BY pId ASC";
 $rs                 = $conn->Execute($sql);
 $menu_Undertaker[0] = '請選擇';
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $menu_Undertaker[$rs->fields['pName']] = $rs->fields['pName'];
     $rs->MoveNext();
 }
@@ -1746,7 +1795,7 @@ $sql = "SELECT * FROM tContractService WHERE cCertifiedId ='" . $id . "' AND cDe
 $rs  = $conn->Execute($sql);
 
 $i = 0;
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $data_service[$i]       = $rs->fields;
     $data_service[$i]['no'] = ($i + 1);
     $i++;
@@ -1758,8 +1807,9 @@ while (!$rs->EOF) {
 $sql = "SELECT *,(SELECT bName FROM tBrand WHERE bId = sBrand) AS BrandName FROM tScrivenerFeedSp WHERE sScrivener ='" . $data_scrivener['cScrivener'] . "'  AND sDel =0";
 $rs  = $conn->Execute($sql);
 
-$i = 0;
-while (!$rs->EOF) {
+$tmp = []; // 初始化為空陣列
+$i   = 0;
+while ($rs && ! $rs->EOF) {
     $tmp[] = $rs->fields['BrandName'] . ":" . $rs->fields['sReacllBrand'] . "%(仲介)、" . $rs->fields['sRecall'] . "%(地政士)";
 
     $i++;
@@ -1788,7 +1838,7 @@ $rs           = $conn->Execute($sql);
 
 if ($rs->RecordCount() > 0) {
     $imgStampEdit = '1';
-    if (!$rs->EOF) {
+    if (! $rs->EOF) {
         $imgStamp = '<div onclick="newImg(' . $data_realstate['cBranchNum'] . ', \'' . $id . '\')" style="cursor:pointer;"><img src="showcIdStamp.php?bId=' . $data_realstate['cBranchNum'] . '&cId=' . $id . '" style="width:236px;height:135px;"></div>';
     }
 }
@@ -1802,7 +1852,7 @@ $rs            = $conn->Execute($sql);
 
 if ($rs->RecordCount() > 0) {
     $imgStampEdit1 = '1';
-    if (!$rs->EOF) {
+    if (! $rs->EOF) {
         $imgStamp1 = '<div onclick="newImg(' . $data_realstate['cBranchNum1'] . ', \'' . $id . '\')" style="cursor:pointer;"><img src="showcIdStamp.php?bId=' . $data_realstate['cBranchNum1'] . '&cId=' . $id . '" style="width:236px;height:135px;"></div>';
     }
 }
@@ -1816,7 +1866,7 @@ $rs            = $conn->Execute($sql);
 
 if ($rs->RecordCount() > 0) {
     $imgStampEdit2 = '1';
-    if (!$rs->EOF) {
+    if (! $rs->EOF) {
         $imgStamp2 = '<div onclick="newImg(' . $data_realstate['cBranchNum2'] . ', \'' . $id . '\')" style="cursor:pointer;"><img src="showcIdStamp.php?bId=' . $data_realstate['cBranchNum2'] . '&cId=' . $id . '" style="width:236px;height:135px;"></div>';
     }
 }
@@ -1834,7 +1884,7 @@ $cCaseFeedBackModifyTime = $data_case['cCaseFeedBackModifyTime'];
 $sql = "SELECT *,(SELECT pName FROM tPeopleInfo WHERE pId = cCreator) AS cCreator FROM tContractNote WHERE cCertifiedId = '" . $id . "' AND cDel = 0 ORDER BY cModify_Time ASC";
 $rs  = $conn->Execute($sql);
 
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $rs->fields['cNote']                      = nl2br($rs->fields['cNote']);
     $contractNote[$rs->fields['cCategory']][] = $rs->fields;
 
@@ -1869,57 +1919,57 @@ $sql = "SELECT
 $rs = $conn->Execute($sql);
 $i  = 0;
 
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $j                          = 0;
     $SalesReview[$i]            = $rs->fields;
     $SalesReview[$i]['Status']  = $SalesReview[$i]['fStatus'];
     $SalesReview[$i]['fStatus'] = ($SalesReview[$i]['fStatus'] == 0) ? '申請中' : '已核可'; //0:申請1:核可
 
-    $sql = "SELECT 
+    $sql = "SELECT
                 *,
                 (SELECT bStore FROM `tBranch` WHERE `tBranch`.bId = `tFeedBackMoneyReviewList`.fIndividualId) AS fIndividualName,
                 (SELECT CONCAT(`fAccountName`,'  ', `fAccountNum`, `fAccountNumB`, '-',`fAccount`) FROM tFeedBackData WHERE `tFeedBackData`.fId = `tFeedBackMoneyReviewList`.fFeedbackDataId) AS bankAccount
             FROM tFeedBackMoneyReviewList WHERE fCertifiedId = '" . $id . "' AND fRId = '" . $SalesReview[$i]['fId'] . "'  ORDER BY fCategory ASC"; //AND fDelete = 0
     $rs2 = $conn->Execute($sql);
 
-    $delNote = array();
-    while (!$rs2->EOF) {
+    $delNote = [];
+    while (! $rs2->EOF) {
         if ($rs2->fields['fCategory'] == 1) {
             $SalesReview[$i]['BranchName']         = $branch_type1;
             $SalesReview[$i]['fCaseFeedback']      = $rs2->fields['fCaseFeedback'];
             $SalesReview[$i]['fFeedbackTarget']    = $rs2->fields['fFeedbackTarget'];
             $SalesReview[$i]['fCaseFeedBackMoney'] = $rs2->fields['fCaseFeedBackMoney'];
-            if(!empty($rs2->fields['bankAccount'])){
-                $SalesReview[$i]['scrivenerAccount']   = $rs2->fields['bankAccount'] ;
+            if (! empty($rs2->fields['bankAccount'])) {
+                $SalesReview[$i]['scrivenerAccount'] = $rs2->fields['bankAccount'];
             }
         } elseif ($rs2->fields['fCategory'] == 2) {
             $SalesReview[$i]['BranchName2']         = $branch_type2;
             $SalesReview[$i]['fCaseFeedback2']      = $rs2->fields['fCaseFeedback'];
             $SalesReview[$i]['fFeedbackTarget2']    = $rs2->fields['fFeedbackTarget'];
             $SalesReview[$i]['fCaseFeedBackMoney2'] = $rs2->fields['fCaseFeedBackMoney'];
-            if(!empty($rs2->fields['bankAccount'])){
-                $SalesReview[$i]['scrivenerAccount']   = $rs2->fields['bankAccount'] ;
+            if (! empty($rs2->fields['bankAccount'])) {
+                $SalesReview[$i]['scrivenerAccount'] = $rs2->fields['bankAccount'];
             }
         } elseif ($rs2->fields['fCategory'] == 3) {
             $SalesReview[$i]['BranchName3']         = $branch_type3;
             $SalesReview[$i]['fCaseFeedback3']      = $rs2->fields['fCaseFeedback'];
             $SalesReview[$i]['fFeedbackTarget3']    = $rs2->fields['fFeedbackTarget'];
             $SalesReview[$i]['fCaseFeedBackMoney3'] = $rs2->fields['fCaseFeedBackMoney'];
-            if(!empty($rs2->fields['bankAccount'])){
-                $SalesReview[$i]['scrivenerAccount']   = $rs2->fields['bankAccount'] ;
+            if (! empty($rs2->fields['bankAccount'])) {
+                $SalesReview[$i]['scrivenerAccount'] = $rs2->fields['bankAccount'];
             }
         } elseif ($rs2->fields['fCategory'] == 6) {
             $SalesReview[$i]['BranchName6']         = $branch_type4;
             $SalesReview[$i]['fCaseFeedback6']      = $rs2->fields['fCaseFeedback'];
             $SalesReview[$i]['fFeedbackTarget6']    = $rs2->fields['fFeedbackTarget'];
             $SalesReview[$i]['fCaseFeedBackMoney6'] = $rs2->fields['fCaseFeedBackMoney'];
-            if(!empty($rs2->fields['bankAccount'])){
-                $SalesReview[$i]['scrivenerAccount']   = $rs2->fields['bankAccount'] ;
+            if (! empty($rs2->fields['bankAccount'])) {
+                $SalesReview[$i]['scrivenerAccount'] = $rs2->fields['bankAccount'];
             }
         } elseif ($rs2->fields['fCategory'] == 4) {
             $SalesReview[$i]['ScrivenerSPFeedMoney'] = $rs2->fields['fCaseFeedBackMoney'];
-            if(!empty($rs2->fields['bankAccount'])){
-                $SalesReview[$i]['scrivenerAccount']   = $rs2->fields['bankAccount'] ;
+            if (! empty($rs2->fields['bankAccount'])) {
+                $SalesReview[$i]['scrivenerAccount'] = $rs2->fields['bankAccount'];
             }
         } elseif ($rs2->fields['fCategory'] == 5) {
             if ($rs2->fields['fDelete'] == 0) {
@@ -1941,24 +1991,38 @@ while (!$rs->EOF) {
                 }
 
             }
-            if(!empty($rs2->fields['bankAccount'])){
-                $SalesReview[$i]['otherAccount']  = $rs2->fields['bankAccount'];
+            if (! empty($rs2->fields['bankAccount'])) {
+                $SalesReview[$i]['otherAccount'] = $rs2->fields['bankAccount'];
             }
 
             $j++;
-        }  elseif ($rs2->fields['fCategory'] == 7) { //個案回饋
+        } elseif ($rs2->fields['fCategory'] == 7) { //個案回饋
 
             $no = '';
-            if($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum']) $no = 1;
-            if($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum1']) $no = 2;
-            if($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum2']) $no = 3;
-            if($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum3']) $no = 6;
+            if ($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum']) {
+                $no = 1;
+            }
 
-            if($no) {
-                if($no == 1) $no = '';
-                $SalesReview[$i]['individualName'.$no][] = $rs2->fields['fIndividualName'];
-                $SalesReview[$i]['individualMoney'.$no][] = $rs2->fields['fCaseFeedBackMoney'];
-                $SalesReview[$i]['individualId'.$no][] = $rs2->fields['fIndividualId'];
+            if ($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum1']) {
+                $no = 2;
+            }
+
+            if ($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum2']) {
+                $no = 3;
+            }
+
+            if ($rs2->fields['fFeedbackStoreId'] == $data_realstate['cBranchNum3']) {
+                $no = 6;
+            }
+
+            if ($no) {
+                if ($no == 1) {
+                    $no = '';
+                }
+
+                $SalesReview[$i]['individualName' . $no][]  = $rs2->fields['fIndividualName'];
+                $SalesReview[$i]['individualMoney' . $no][] = $rs2->fields['fCaseFeedBackMoney'];
+                $SalesReview[$i]['individualId' . $no][]    = $rs2->fields['fIndividualId'];
 
             }
         }
@@ -2017,7 +2081,7 @@ $data_income['cInspetorName'] = $rs->fields['pName'];
 //買賣經紀人電話
 $sql = "SELECT * FROM tContractPhone WHERE cCertifiedId = '" . $id . "' AND (cIdentity =3 OR cIdentity = 4)";
 $rs  = $conn->Execute($sql);
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     if ($rs->fields['cIdentity'] == 3) {
         $buyerSalesPhone[] = $rs->fields;
     } elseif ($rs->fields['cIdentity'] == 4) {
@@ -2031,7 +2095,7 @@ while (!$rs->EOF) {
 //賣方備註選單
 $sql = "SELECT * FROM tCategorySellerNote  ORDER BY cOrder ASC ";
 $rs  = $conn->Execute($sql);
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $menuSellerNote[$rs->fields['cId']] = $rs->fields['cName'];
     $rs->MoveNext();
 }
@@ -2121,7 +2185,7 @@ function tDate_check($_date, $_dateForm = 'ymd', $_dateType = 'r', $_delimiter =
     }
     ##
 
-    $_minus = $_minus + $weekend; //傳進來的日期必須加上遇到加日延後的日期
+    $_minus = $_minus + $weekend;                                                             //傳進來的日期必須加上遇到加日延後的日期
     $_t     = date("Y-m-d", mktime(0, 0, 0, $_aDate[1], ($_aDate[2] + $_minus), $_aDate[0])); //設定日期為 t+1 天
     unset($_aDate);
 
@@ -2185,11 +2249,11 @@ $rs    = $conn->Execute($sql);
 $legal = $rs->fields;
 ##
 
-$landPrice = array();
+$landPrice = [];
 $sql       = "SELECT * FROM tContractLandPrice WHERE cCertifiedId = '" . $id . "' AND cLandItem = 0 AND cItem < 2"; //只取兩筆 這兩筆不會被刪除
 $rs        = $conn->Execute($sql);
 
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     if (preg_match("/0000\-00\-00/", $rs->fields['cMoveDate'])) {$rs->fields['cMoveDate'] = '';} else { $rs->fields['cMoveDate'] = $advance->ConvertDateToRoc($rs->fields['cMoveDate'], base::DATE_FORMAT_NUM_MONTH);}
 
     array_push($landPrice, $rs->fields);
@@ -2198,7 +2262,7 @@ while (!$rs->EOF) {
 }
 
 if (empty($landPrice)) {
-    $landPrice = array(0 => array(), 1 => array());
+    $landPrice = [0 => [], 1 => []];
 }
 ##
 
@@ -2210,14 +2274,14 @@ function branchNote($branch_id)
     $sql = "SELECT * FROM tBranchNote WHERE bStore = '" . $branch_id . "' AND bDel = 0 AND bStatus = 0";
     $rs  = $conn->Execute($sql);
     $txt = '';
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $txt .= $rs->fields['bNote'] . "\r\n\r\n";
         $rs->MoveNext();
     }
 
     return $txt;
 }
-$checkOwnerAddr = in_array($data_case['cCaseStatus'], [3,4,9,10]) ? 1 : 0;
+$checkOwnerAddr = in_array($data_case['cCaseStatus'], [3, 4, 9, 10]) ? 1 : 0;
 
 //20240215 加入顧代書選單
 $sql         = 'SELECT cKuDownload FROM tContractScrivener WHERE cCertifiedId = "' . $id . '";';
@@ -2236,7 +2300,7 @@ $smarty->assign('menu_LandFee', $menu_LandFee);
 $smarty->assign('data_LandCategory', $data_LandCategory);
 $smarty->assign('menu_landCategoryLand', $menu_landCategoryLand);
 $smarty->assign('menu_landCategoryBuild', $menu_landCategoryBuild);
-$smarty->assign('menu_checklist', array(1 => '全部不帶入點交單和出款'));
+$smarty->assign('menu_checklist', [1 => '全部不帶入點交單和出款']);
 $smarty->assign('checkOwnerNoteTime', $checkOwnerNoteTime);
 $smarty->assign('dataSellerNote', $dataSellerNote);
 $smarty->assign('menuSellerNote', $menuSellerNote);
@@ -2333,8 +2397,8 @@ $smarty->assign('fbDisabled', $fbDisabled);
 $smarty->assign('fbcheckedR', $fbcheckedR);
 $smarty->assign('fbcheckedS', $fbcheckedS);
 
-$smarty->assign('inputSelect2', array(0 => '待確認', 1 => '是', 2 => '否'));
-$smarty->assign('inputSelect', array(0 => '否', 1 => '是'));
+$smarty->assign('inputSelect2', [0 => '待確認', 1 => '是', 2 => '否']);
+$smarty->assign('inputSelect', [0 => '否', 1 => '是']);
 $smarty->assign('owner_resident_seledted', $data_owner['cResidentLimit']);
 $smarty->assign('buyer_resident_seledted', $data_buyer['cResidentLimit']);
 
@@ -2345,7 +2409,7 @@ $smarty->assign('scrivenerDisabled', $scrivenerDisabled);
 $smarty->assign('limit_show', $limit_show);
 $smarty->assign('_tabs', $_tabs);
 $smarty->assign('is_edit', 1);
-$smarty->assign('menu_ftype', array(1 => '地政士', 2 => '仲介'));
+$smarty->assign('menu_ftype', [1 => '地政士', 2 => '仲介']);
 $smarty->assign('menu_material', $menu_material);
 $smarty->assign('menu_objkind', $menu_objkind);
 $smarty->assign('menu_objuse', $menu_objUse);
@@ -2375,7 +2439,7 @@ $smarty->assign('data_scrivener', $data_scrivener);
 $smarty->assign('data_buyer_other', $buyer_other);
 $smarty->assign('buyer_other_count', $buyer_other_count);
 $smarty->assign('data_owner_other', $owner_other);
-$smarty->assign('data_owner_total', count($owner_other));
+$smarty->assign('data_owner_total', is_array($owner_other) ? count($owner_other) : 0);
 $smarty->assign('owner_other_count', $owner_other_count);
 $smarty->assign('branch_count', $bc);
 $smarty->assign('data_property', $data_property);
@@ -2392,72 +2456,84 @@ $smarty->assign('case_lasteditor', $case_lasteditor);
 $smarty->assign('WEB_STAGE', $GLOBALS['WEB_STAGE']);
 $smarty->assign('checkOwnerAddr', $checkOwnerAddr);
 
-$smarty->assign('land_country', listCity($conn, $data_land['cZip'])); //土地縣市
-$smarty->assign('land_area', listArea($conn, $data_land['cZip'])); //土地區域
-$smarty->assign('property_country', listCity($conn, $data_property['cZip'])); //建物縣市
-$smarty->assign('property_area', listArea($conn, $data_property['cZip'])); //建物區域
-$smarty->assign('scrivener_country', listCity($conn, $scr['sZip1'])); //地政士縣市
-$smarty->assign('scrivener_area', listArea($conn, $scr['sZip1'])); //地政士區域
-$smarty->assign('scrivener_zip', $scr['sZip1']); //地政士郵遞區號
+$smarty->assign('land_country', listCity($conn, $data_land['cZip']));               //土地縣市
+$smarty->assign('land_area', listArea($conn, $data_land['cZip']));                  //土地區域
+$smarty->assign('property_country', listCity($conn, $data_property['cZip']));       //建物縣市
+$smarty->assign('property_area', listArea($conn, $data_property['cZip']));          //建物區域
+$smarty->assign('scrivener_country', listCity($conn, $scr['sZip1']));               //地政士縣市
+$smarty->assign('scrivener_area', listArea($conn, $scr['sZip1']));                  //地政士區域
+$smarty->assign('scrivener_zip', $scr['sZip1']);                                    //地政士郵遞區號
 $smarty->assign('owner_registcountry', listCity($conn, $data_owner['cRegistZip'])); //賣方戶籍縣市
-$smarty->assign('owner_registarea', listArea($conn, $data_owner['cRegistZip'])); //賣方戶籍區域
-$smarty->assign('owner_basecountry', listCity($conn, $data_owner['cBaseZip'])); //賣方通訊縣市
-$smarty->assign('owner_basearea', listArea($conn, $data_owner['cBaseZip'])); //賣方通訊區域
+$smarty->assign('owner_registarea', listArea($conn, $data_owner['cRegistZip']));    //賣方戶籍區域
+$smarty->assign('owner_basecountry', listCity($conn, $data_owner['cBaseZip']));     //賣方通訊縣市
+$smarty->assign('owner_basearea', listArea($conn, $data_owner['cBaseZip']));        //賣方通訊區域
 $smarty->assign('buyer_registcountry', listCity($conn, $data_buyer['cRegistZip'])); //買方戶籍縣市
-$smarty->assign('buyer_registarea', listArea($conn, $data_buyer['cRegistZip'])); //買方戶籍區域
-$smarty->assign('buyer_basecountry', listCity($conn, $data_buyer['cBaseZip'])); //買方通訊縣市
-$smarty->assign('buyer_basearea', listArea($conn, $data_buyer['cBaseZip'])); //買方通訊區域
-$smarty->assign('realestate_country', listCity($conn, $rel1['bZip'])); //第一組仲介縣市
-$smarty->assign('realestate_area', listArea($conn, $rel1['bZip'])); //第一組仲介區域
-$smarty->assign('realestate_country1', listCity($conn, $rel2['bZip'])); //第二組仲介縣市
-$smarty->assign('realestate_area1', listArea($conn, $rel2['bZip'])); //第二組仲介區域
-$smarty->assign('realestate_country2', listCity($conn, $rel3['bZip'])); //第三組仲介縣市
-$smarty->assign('realestate_area2', listArea($conn, $rel3['bZip'])); //第三組仲介區域
-$smarty->assign('realestate_country3', listCity($conn, $rel4['bZip'])); //第四組仲介縣市
-$smarty->assign('realestate_area3', listArea($conn, $rel4['bZip'])); //第四組仲介區域
+$smarty->assign('buyer_registarea', listArea($conn, $data_buyer['cRegistZip']));    //買方戶籍區域
+$smarty->assign('buyer_basecountry', listCity($conn, $data_buyer['cBaseZip']));     //買方通訊縣市
+$smarty->assign('buyer_basearea', listArea($conn, $data_buyer['cBaseZip']));        //買方通訊區域
+$smarty->assign('realestate_country', listCity($conn, $rel1['bZip']));              //第一組仲介縣市
+$smarty->assign('realestate_area', listArea($conn, $rel1['bZip']));                 //第一組仲介區域
+$smarty->assign('realestate_country1', listCity($conn, $rel2['bZip']));             //第二組仲介縣市
+$smarty->assign('realestate_area1', listArea($conn, $rel2['bZip']));                //第二組仲介區域
+$smarty->assign('realestate_country2', listCity($conn, $rel3['bZip']));             //第三組仲介縣市
+$smarty->assign('realestate_area2', listArea($conn, $rel3['bZip']));                //第三組仲介區域
+$smarty->assign('realestate_country3', listCity($conn, $rel4['bZip']));             //第四組仲介縣市
+$smarty->assign('realestate_area3', listArea($conn, $rel4['bZip']));                //第四組仲介區域
 
 $smarty->assign('realestate_status', $rel1['bStatus']);
 $smarty->assign('realestate_status1', $rel2['bStatus']);
 $smarty->assign('realestate_status2', $rel3['bStatus']);
 $smarty->assign('realestate_status3', $rel4['bStatus']);
-$smarty->assign('scrivener_sales', $scrivener_sales); //地政業務
-$smarty->assign('branchnum_sales', $branchnum_sales); //仲介店(1)業務 (下拉的)
-$smarty->assign('branchnum_sales1', $branchnum_sales1); //仲介店(2)業務(下拉的)
-$smarty->assign('branchnum_sales2', $branchnum_sales2); //仲介店(3)業務(下拉的)
-$smarty->assign('branchnum_sales3', $branchnum_sales3); //仲介店(4)業務(下拉的)
-$smarty->assign('branchnum_data_sales', $branchnum_data_sales); //仲介店(1)業務資訊
+$smarty->assign('scrivener_sales', $scrivener_sales);             //地政業務
+$smarty->assign('branchnum_sales', $branchnum_sales);             //仲介店(1)業務 (下拉的)
+$smarty->assign('branchnum_sales1', $branchnum_sales1);           //仲介店(2)業務(下拉的)
+$smarty->assign('branchnum_sales2', $branchnum_sales2);           //仲介店(3)業務(下拉的)
+$smarty->assign('branchnum_sales3', $branchnum_sales3);           //仲介店(4)業務(下拉的)
+$smarty->assign('branchnum_data_sales', $branchnum_data_sales);   //仲介店(1)業務資訊
 $smarty->assign('branchnum_data_sales1', $branchnum_data_sales1); //仲介店(2)業務資訊
 $smarty->assign('branchnum_data_sales2', $branchnum_data_sales2); //仲介店(3)業務資訊
 $smarty->assign('branchnum_data_sales3', $branchnum_data_sales3); //仲介店(4)業務資訊
 $smarty->assign('scrivener_office', $scrivener_office);
 $smarty->assign('scrivener_sSpRecall', $scrivener_sSpRecall); //特殊回饋 $scrivener_brand
 $smarty->assign('scrivener_brand', $scrivener_brand);
-$smarty->assign('sSpRecall', $sSpRecall); //特殊回饋金顯示
-$smarty->assign('branch_type1', $branch_type1); //仲介店(1)
-$smarty->assign('branch_type2', $branch_type2); //仲介店(2)
-$smarty->assign('branch_type3', $branch_type3); //仲介店(3)
-$smarty->assign('branch_type4', $branch_type4); //仲介店(4)
-$smarty->assign('branch_cat1', $branch_cat1); //
-$smarty->assign('branch_cat2', $branch_cat2); //
-$smarty->assign('branch_cat3', $branch_cat3); //
-$smarty->assign('branch_cat4', $branch_cat4); //
-$smarty->assign('sales_option', $sales_option); //業務option
+$smarty->assign('sSpRecall', $sSpRecall);               //特殊回饋金顯示
+$smarty->assign('branch_type1', $branch_type1);         //仲介店(1)
+$smarty->assign('branch_type2', $branch_type2);         //仲介店(2)
+$smarty->assign('branch_type3', $branch_type3);         //仲介店(3)
+$smarty->assign('branch_type4', $branch_type4);         //仲介店(4)
+$smarty->assign('branch_cat1', $branch_cat1);           //
+$smarty->assign('branch_cat2', $branch_cat2);           //
+$smarty->assign('branch_cat3', $branch_cat3);           //
+$smarty->assign('branch_cat4', $branch_cat4);           //
+$smarty->assign('sales_option', $sales_option);         //業務option
 $smarty->assign('menu_countrycode', $menu_countrycode); //國籍代碼
-$smarty->assign('feedbackAccount', $feedbackAccount); //回饋金帳戶
+$smarty->assign('feedbackAccount', $feedbackAccount);   //回饋金帳戶
 
 $smarty->assign('sales1', $Sales1); //被選的業務仲介一
 $smarty->assign('sales2', $Sales2); //被選的業務仲介二
 $smarty->assign('sales3', $Sales3); //被選的業務仲介三
 $smarty->assign('sales4', $Sales4); //被選的業務仲介三
-$smarty->assign('rel1', $rel1); //仲介店資料1
-$smarty->assign('rel2', $rel2); //仲介店資料2
-$smarty->assign('rel3', $rel3); //仲介店資料3
-$smarty->assign('rel4', $rel4); //仲介店資料4
+$smarty->assign('rel1', $rel1);     //仲介店資料1
+$smarty->assign('rel2', $rel2);     //仲介店資料2
+$smarty->assign('rel3', $rel3);     //仲介店資料3
+$smarty->assign('rel4', $rel4);     //仲介店資料4
 
 $smarty->assign('scrivener_feedDateCat', $scr['sFeedDateCat']); //地政士回饋方式 季/月/隨案
 
-
 $smarty->assign('data_feedData1', $data_feedData1); //回饋金資料1
+// 確保變數有預設值
+$data_feedData2 = $data_feedData2 ?? [];
+$data_feedData3 = $data_feedData3 ?? [];
+$data_feedData4 = $data_feedData4 ?? [];
+
+$data_feedDataCount2 = $data_feedDataCount2 ?? 0;
+$data_feedDataCount3 = $data_feedDataCount3 ?? 0;
+$data_feedDataCount4 = $data_feedDataCount4 ?? 0;
+
+$data_bFeedbackMoney2 = $data_bFeedbackMoney2 ?? 0;
+$data_bFeedbackMoney3 = $data_bFeedbackMoney3 ?? 0;
+$data_bFeedbackMoney4 = $data_bFeedbackMoney4 ?? 0;
+
 $smarty->assign('data_feedData2', $data_feedData2); //回饋金資料2
 $smarty->assign('data_feedData3', $data_feedData3); //回饋金資料3
 $smarty->assign('data_feedData4', $data_feedData4); //回饋金資料3
