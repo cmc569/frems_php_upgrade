@@ -59,6 +59,7 @@ $(document).ready(function() {
                     <div>
                         <fieldset>
                         <{foreach from=$v.lands key=ka item=va}>
+                        <{if isset($va.before) && $va.before}>
                         <{foreach from=$va.before key=kb item=vb}>
                         <label><input type="checkbox" name="before[]" value="<{$v.cCertifiedId}>_<{$v.target}>_<{$vb.cLandItem}>_<{$vb.cItem}>_<{$v.identify_id}>" <{if $vb.selected == 'Y'}>checked<{/if}>>&nbsp;前次明細：</label>
                         <ul class="ul-class">
@@ -67,6 +68,7 @@ $(document).ready(function() {
                             <li>權利範圍：<{$vb.power}></li>
                         </ul>
                         <{/foreach}>
+                        <{/if}>
                         <{/foreach}>
                         </fieldset>
                     </div>
@@ -84,6 +86,7 @@ $(document).ready(function() {
                     <div>
                         <fieldset>
                         <{foreach from=$v.lands key=ka item=va}>
+                        <{if isset($va.before) && $va.before}>
                         <{foreach from=$va.before key=kb item=vb}>
                         <label><input type="checkbox" name="before[]" value="<{$v.cCertifiedId}>_<{$v.target}>_<{$vb.cLandItem}>_<{$vb.cItem}>_<{$v.identify_id}>" <{if $vb.selected == 'Y'}>checked<{/if}>>&nbsp;前次明細：</label>
                         <ul class="ul-class">
@@ -92,6 +95,7 @@ $(document).ready(function() {
                             <li>權利範圍：<{$vb.power}></li>
                         </ul>
                         <{/foreach}>
+                        <{/if}>
                         <{/foreach}>
                         </fieldset>
                     </div>

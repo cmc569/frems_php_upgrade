@@ -21,7 +21,7 @@ $cId = $_GET['cId'];
 $conn = new first1DB;
 
 //POST 儲存
-if (!empty($_POST['cId']) && preg_match("/^\d{9}$/", $_POST['cId'])) {
+if (! empty($_POST['cId']) && preg_match("/^\d{9}$/", $_POST['cId'])) {
     $cId = $_POST['cId'];
     // echo '<pre>';
     // print_r($_POST);
@@ -32,7 +32,7 @@ if (!empty($_POST['cId']) && preg_match("/^\d{9}$/", $_POST['cId'])) {
         $sql = 'DELETE FROM tContractTransferAreaBefore WHERE cCertifiedId = :cId;';
         $conn->exeSql($sql, ['cId' => $cId]);
 
-        if (!empty($_POST['before'])) {
+        if (! empty($_POST['before'])) {
             $sql = '';
             foreach ($_POST['before'] as $v) {
                 $data = explode('_', $v);
@@ -57,7 +57,7 @@ if (!empty($_POST['cId']) && preg_match("/^\d{9}$/", $_POST['cId'])) {
     }
 }
 
-if (!preg_match("/^\d{9}$/", $cId)) {
+if (! preg_match("/^\d{9}$/", $cId)) {
     exit('Invalid CertifiedId Format!');
 }
 
@@ -67,11 +67,22 @@ if (!preg_match("/^\d{9}$/", $cId)) {
 //取得目前的前次紀錄
 $sql    = 'SELECT cCertifiedId, cTarget, cLandItem, cItem as item, cIdentifyId FROM tContractTransferAreaBefore WHERE cCertifiedId = :cId;';
 $before = $conn->all($sql, ['cId' => $cId]);
+// 確保 $before 是一個陣列
+if (! is_array($before)) {
+    $before = [];
+}
 // print_r($before);exit;
 
 //取得土地地號等相關資訊
 $sql   = 'SELECT cItem, cLand1, cLand2, cLand3 FROM tContractLand WHERE cCertifiedId = :cId;';
 $lands = $conn->all($sql, ['cId' => $cId]);
+
+// 確保每個土地記錄都有 before 索引
+foreach ($lands as $k => $v) {
+    if (! isset($lands[$k]['before'])) {
+        $lands[$k]['before'] = [];
+    }
+}
 // print_r($lands);exit;
 
 //取得土地地號前次資訊
@@ -79,10 +90,10 @@ $sql         = 'SELECT cLandItem, cItem, cMoveDate, cLandPrice, cPower1, cPower2
 $before_data = $conn->all($sql, ['cId' => $cId]);
 // print_r($before_data);exit;
 
-if (!empty($before_data)) {
+if (! empty($before_data)) {
     foreach ($lands as $k => $v) {
         foreach ($before_data as $ka => $va) {
-            if (($v['cItem'] == $va['cLandItem']) && (preg_match("/^\d{4}\-\d{2}\-\d{2}$/", $va['cMoveDate']) && ($va['cMoveDate'] != '0000-00-00')) && !empty($va['cLandPrice'])) {
+            if (($v['cItem'] == $va['cLandItem']) && (preg_match("/^\d{4}\-\d{2}\-\d{2}$/", $va['cMoveDate']) && ($va['cMoveDate'] != '0000-00-00')) && ! empty($va['cLandPrice'])) {
                 $tmp             = explode('-', $va['cMoveDate']);
                 $va['cMoveDate'] = ($tmp[0] - 1911) . '/' . str_pad($tmp[1], 2, '0', STR_PAD_LEFT);
                 $tmp             = null;unset($tmp);
@@ -106,7 +117,7 @@ $owners[] = array_merge(getBuyerOwner($conn, $cId, 'tContractOwner'), ['target' 
 $others = [];
 $others = getOtherOwner($conn, $cId);
 
-if (!empty($others)) {
+if (! empty($others)) {
     foreach ($others as $k => $v) {
         $owners[] = [
             'identify_id' => $v['identify_id'],
@@ -118,6 +129,11 @@ $others = null;unset($others);
 
 $owners = array_map(function ($item) use ($lands, $before) {
     foreach ($lands as $k => $v) {
+        // 確保 'before' 索引存在
+        if (! isset($v['before'])) {
+            continue;
+        }
+
         foreach ($v['before'] as $ka => $va) {
             $va['selected'] = 'N';
 
@@ -141,7 +157,11 @@ $owners = array_map(function ($item) use ($lands, $before) {
 }, $owners);
 // print_r($owners);exit;
 
+// 初始化 $buyers 變數 (目前模板中有使用但沒有賦值)
+$buyers = [];
+
 $smarty->assign('cId', $cId);
 $smarty->assign('owners', $owners);
+$smarty->assign('buyers', $buyers);
 
 $smarty->display('landBeforeTransferEdit.inc.tpl', '', 'escrow');
