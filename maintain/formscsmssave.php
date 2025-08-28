@@ -16,12 +16,12 @@ if (count($_POST['sSn']) > 0) {
 
 // die('--');
 
-if (!empty($_POST['sms_sMobile'])) {
+if (! empty($_POST['sms_sMobile'])) {
     $sms->AddScrivener($_POST, $_POST['scid']);
     write_log('新增簡訊對象,' . json_encode($_POST) . '', 'scrivenersms');
 }
 
-$sms->SaveScrivenerDefault($_POST['sDefault'], $_POST['scid'], $_POST['sSend'], $_POST['sName']);
+$sms->SaveScrivenerDefault($_POST['sDefault'], $_POST['scid'], $_POST['sName'], $_POST['sSend']);
 
 if ($_POST['same'] == 1) {
     changeCaseMobile($_POST['scid'], $_POST);
@@ -53,7 +53,7 @@ function changeCaseMobile($sId, $data)
 
     $rs = $conn->Execute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $tmpN = explode(',', $rs->fields['cSmsTargetName']);
         $tmpM = explode(',', $rs->fields['cSmsTarget']);
 

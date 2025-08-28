@@ -23,9 +23,9 @@ class SMS extends Advance
         $this->mKeySubject      = "id";
         $this->mKeyScrivener    = "sNID";
         $this->mKeyBranch       = "bNID";
-        $this->mColumnSubject   = array('tName', 'tMobile', 'tDefault');
-        $this->mColumnScrivener = array('sName', 'sMobile', 'sDefault');
-        $this->mColumnBranch    = array('bName', 'bMobile', '');
+        $this->mColumnSubject   = ['tName', 'tMobile', 'tDefault'];
+        $this->mColumnScrivener = ['sName', 'sMobile', 'sDefault'];
+        $this->mColumnBranch    = ['bName', 'bMobile', ''];
     }
 
     public function CombineSmsList($arr_subject, $arr_list, $category)
@@ -64,7 +64,7 @@ class SMS extends Advance
 
     public function GetSmsSubject($kind, $id = null)
     {
-        $arr_kind  = array();
+        $arr_kind  = [];
         $sql       = "";
         $sql_where = "";
         $sql_main  = "";
@@ -141,7 +141,7 @@ class SMS extends Advance
 
     public function GetScrivenerDefault($scid)
     {
-        $arr_default = array();
+        $arr_default = [];
         $list        = $this->GetScrivenerList($scid);
         foreach ($list as $k => $v) {
             if ($v['sDefault'] == '1') {
@@ -151,7 +151,7 @@ class SMS extends Advance
         return $arr_default;
     }
 
-    public function SaveScrivenerDefault($arrNid, $scid, $arrSend = '', $Name)
+    public function SaveScrivenerDefault($arrNid, $scid, $Name, $arrSend = '')
     {
         $sql = " UPDATE
                     `tScrivenerSms` SET
