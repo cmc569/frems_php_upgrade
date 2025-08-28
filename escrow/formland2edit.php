@@ -20,8 +20,8 @@ function GetLandPriceTwo($certifiedId, $item)
     $sql = "SELECT cLandItem, cMoveDate, cLandPrice, cPower1, cPower2 FROM tContractLandPrice WHERE cCertifiedId = '" . $certifiedId . "' AND cLandItem = '" . $item . "' AND cDel = 0;";
     $rs  = $conn->Execute($sql);
 
-    $data = array();
-    while (!$rs->EOF) {
+    $data = [];
+    while (! $rs->EOF) {
         $rs->fields['cMoveDate'] = preg_match("/0000\-00\-00/", $rs->fields['cMoveDate']) ? '' : $advance->ConvertDateToRoc($rs->fields['cMoveDate'], base::DATE_FORMAT_NUM_MONTH);
         array_push($data, $rs->fields);
 
@@ -67,7 +67,7 @@ for ($i = 0; $i < $max; $i++) {
 
     $landprice = GetLandPriceTwo($id, $data_land[$i]['cItem']); //取得土地前次移轉現值或原規定地價
 
-    if (!empty($landprice)) {
+    if (! empty($landprice)) {
         $data = [
             'land_item'  => [],
             'move_date'  => [],
@@ -124,6 +124,7 @@ $new_record_default['land_price'] = [
 
 $smarty->assign('land_country', listCity($conn)); //土地縣市
 $smarty->assign('data_land', $data_land);
+$landPrice = []; // 初始化 $landPrice 變數
 $smarty->assign('landPrice', $landPrice);
 $smarty->assign('cSignCategory', $cSignCategory); //判斷合約書位置
 $smarty->assign('certifyid', $id);
