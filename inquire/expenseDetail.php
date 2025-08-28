@@ -53,7 +53,7 @@
         }
         ##
 
-                         //取出資料
+                    //取出資料
         $list = []; // 初始化陣列
         $sql  = '
 		SELECT
@@ -117,7 +117,7 @@
 <script type="text/javascript" src="/libs/jquery/js/jquery-ui-1.8.18.custom.min.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-	<?php echo $str?>
+	<?php echo $str ?>
 	recalMoney() ;
 
 	$('.recount').keyup(function() {
@@ -144,7 +144,7 @@ function update(sid) {
 	var t = $('[name="target_' + sid +'"]').val() ;
 	var i = $('[name="item_' + sid +'"]').val() ;
 	var m = $('[name="money_' + sid +'"]').val() ;
-	var bank = <?php echo $Bank?>;
+	var bank =	           <?php echo $Bank ?>;
 
 	if ((t == '')||(i == '')||(m == '')) {
 		alert('輸入資料有誤、不可為空白!!請確認輸入資訊!!') ;
@@ -189,7 +189,7 @@ function addNew() {
 	var t = $('[name="newTarget"]').val() ;
 	var i = $('[name="newItem"]').val() ;
 	var m = $('[name="newMoney"]').val() ;
-	var bank = <?php echo $Bank?>;
+	var bank =	           <?php echo $Bank ?>;
 
 	if ((t == '')||(i == '')||(m == '')) {
 		alert('相關欄位不可為空白!!請確認輸入!!') ;
@@ -219,7 +219,7 @@ function addNew() {
 }
 function checkobjkind(n){
 
-	var bank = <?php echo $Bank?>;
+	var bank =	           <?php echo $Bank ?>;
 
 	if (bank == 68) {
 		if (n =='new') {
@@ -253,12 +253,12 @@ function checkobjkind(n){
 </head>
 <body>
 <form method="POST" name="closeform" action="buyerowner_detail.php">
-	<input type="hidden" name="sn" value="<?php echo $cid?>">
+	<input type="hidden" name="sn" value="<?php echo $cid ?>">
 </form>
 <form method="POST" name="myform">
 	<input type="hidden" name="op">
-	<input type="hidden" name="eid" value="<?php echo $eid?>">
-	<input type="hidden" name="cid" value="<?php echo $cid?>">
+	<input type="hidden" name="eid" value="<?php echo $eid ?>">
+	<input type="hidden" name="cid" value="<?php echo $cid ?>">
 
 	<input type="hidden" name="sid">
 	<input type="hidden" name="tg">
@@ -267,9 +267,9 @@ function checkobjkind(n){
 	<input type="hidden" name="ob">
 </form>
 <div style="height:50px;">
-	入款總金額：<span id="totalcount" style="font-weight:bold;font-size:14pt;color:red;"><?php echo number_format($ExpenseMoney)?></span> 元整、
+	入款總金額：<span id="totalcount" style="font-weight:bold;font-size:14pt;color:red;"><?php echo number_format($ExpenseMoney) ?></span> 元整、
 	已分配金額：<span id="recal" style="font-weight:bold;font-size:14pt;color:blue;">0</span> 元整<br>
-	預估一般增值稅： <span style="font-weight:bold;font-size:14pt;color:green;"><?php echo number_format($AddedTaxMoney)?></span>元
+	預估一般增值稅： <span style="font-weight:bold;font-size:14pt;color:green;"><?php echo number_format($AddedTaxMoney) ?></span>元
 </div>
 <table>
 	<tr>
@@ -285,8 +285,8 @@ function checkobjkind(n){
             ?>
 	<tr>
 		<td>
-			<!-- <select name="target_<?php echo $list[$i]['eId']?>"<?php echo $disabled?> style="width:100px;"> -->
-			<select name="target_<?php echo $list[$i]['eId']?>" style="width:100px;">
+			<!-- <select name="target_<?php echo $list[$i]['eId'] ?>"<?php echo $disabled ?> style="width:100px;"> -->
+			<select name="target_<?php echo $list[$i]['eId'] ?>" style="width:100px;">
 			<?php
                 echo '<option value="2"';
                             if ($list[$i]['eTarget'] == '2') {
@@ -302,7 +302,7 @@ function checkobjkind(n){
 			</select>
 		</td>
 		<td>
-			<select name="item_<?php echo $list[$i]['eId']?>"<?php echo $disabled?> style="width:120px;" onchange="checkobjkind('<?php echo $list[$i]['eId']?>')">
+			<select name="item_<?php echo $list[$i]['eId'] ?>"<?php echo $disabled ?> style="width:120px;" onchange="checkobjkind('<?php echo $list[$i]['eId'] ?>')">
 			<?php
                 for ($j = 0; $j < count($options); $j++) {
                                 echo '<option value="' . $options[$j]['cId'] . '"';
@@ -317,20 +317,20 @@ function checkobjkind(n){
 		<?php if ($Bank == 68):
                             // $list[$i]['eObjKind2'] = '03';
                         ?>
-				<td>
-					<select name="ObjKind2_<?php echo $list[$i]['eId']?>" id="">
-					<option value="03" <?php echo ($list[$i]['eObjKind2'] == '03') ? 'selected=selected' : ''?>>不用代墊</option>
-					<option value="01" <?php echo ($list[$i]['eObjKind2'] == '01') ? 'selected=selected' : ''?>>申請公司代墊</option>
+					<td>
+						<select name="ObjKind2_<?php echo $list[$i]['eId'] ?>" id="">
+						<option value="03"						                   <?php echo($list[$i]['eObjKind2'] == '03') ? 'selected=selected' : '' ?>>不用代墊</option>
+						<option value="01"						                   <?php echo($list[$i]['eObjKind2'] == '01') ? 'selected=selected' : '' ?>>申請公司代墊</option>
 
-			    	</select>
-				</td>
-			<?php endif?>
+				    	</select>
+					</td>
+				<?php endif?>
 		<td>
-			<input type="text" style="width:150px;text-align:right;"<?php echo $disabled?> class="recount" name="money_<?php echo $list[$i]['eId']?>" value="<?php echo $list[$i]['eMoney']?>">
+			<input type="text" style="width:150px;text-align:right;"<?php echo $disabled ?> class="recount" name="money_<?php echo $list[$i]['eId'] ?>" value="<?php echo $list[$i]['eMoney'] ?>">
 		</td>
 		<td style="text-align:center;">
-			<input type="button" value="更新" onclick="update('<?php echo $list[$i]['eId']?>')">
-			<input type="button"<?php echo $disabled?> value="刪除" onclick="del('<?php echo $list[$i]['eId']?>')">
+			<input type="button" value="更新" onclick="update('<?php echo $list[$i]['eId'] ?>')">
+			<input type="button"<?php echo $disabled ?> value="刪除" onclick="del('<?php echo $list[$i]['eId'] ?>')">
 		</td>
 	</tr>
 <?php
@@ -407,27 +407,27 @@ function checkobjkind(n){
 			LEFT JOIN
 				tContractCase AS cc ON c.cCertifiedId=cc.cCertifiedId
 			WHERE c.cCertifiedId="' . $cid . '";';
-        $rs = $conn->Execute($sql);
+        $rs_checklist = $conn->Execute($sql);
 
         //確認點交單是否發布
         $checkChecklist = 0;
         $sql            = "SELECT tId FROM tUploadFile WHERE tCertifiedId = '" . $cid . "'";
-        $rs             = $conn->Execute($sql);
-        $checkChecklist = $rs->RecordCount();
+        $rs_upload      = $conn->Execute($sql);
+        $checkChecklist = $rs_upload->RecordCount();
 
-        if ($rs->fields['cCertifiedId'] and $checkChecklist == 0) { //如果有開立過點交表 & 尚未發布
+        if (! $rs_checklist->EOF && $rs_checklist->fields['cCertifiedId'] and $checkChecklist == 0) { //如果有開立過點交表 & 尚未發布
 
             $sql = "DELETE FROM tChecklistBlist  WHERE bCertifiedId ='" . $cid . "'";
             $conn->Execute($sql);
             // echo $sql."<br>";
 
-            checklistBlist($cid, $rs->fields['cEscrowBankAccount']);
+            checklistBlist($cid, $rs_checklist->fields['cEscrowBankAccount']);
             // echo "<hr>";
             $sql = "DELETE FROM tChecklistOlist  WHERE oCertifiedId ='" . $cid . "'";
             $conn->Execute($sql);
 
             // echo $sql."<br>";
-            checklistOlist($cid, $rs->fields['cEscrowBankAccount']);
+            checklistOlist($cid, $rs_checklist->fields['cEscrowBankAccount']);
 
         }
 
@@ -879,7 +879,7 @@ function checkobjkind(n){
         ##
         //
     }
-    //半形<=>全形
+                                           //半形<=>全形
     function n_to_w($strs, $types = '0')
     { // narrow to wide , or wide to narrow
         $nt = [
