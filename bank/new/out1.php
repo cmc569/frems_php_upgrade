@@ -1,72 +1,72 @@
 <?php
-header('Content-Type: text/html; charset=utf-8');
-require_once dirname(dirname(__DIR__)) . '/openadodb.php';
-require_once dirname(dirname(__DIR__)) . '/web_addr.php';
-require_once dirname(dirname(__DIR__)) . '/session_check.php';
-require_once dirname(dirname(__DIR__)) . '/class/checkFeedbackMoneyReview.php';
+    header('Content-Type: text/html; charset=utf-8');
+    require_once dirname(dirname(__DIR__)) . '/openadodb.php';
+    require_once dirname(dirname(__DIR__)) . '/web_addr.php';
+    require_once dirname(dirname(__DIR__)) . '/session_check.php';
+    require_once dirname(dirname(__DIR__)) . '/class/checkFeedbackMoneyReview.php';
 
-$alert = '';
+    $alert = '';
 
-$save = $_POST["save"];
+    $save = $_POST["save"] ?? '';
 
-$vr = empty($_POST['vr']) ? $_GET["vr"] : $_POST["vr"];
+    $vr = empty($_POST['vr']) ? ($_GET["vr"] ?? '') : $_POST["vr"];
 
-$checkList = checkFeedbackMoneyReview($conn, substr($vr, -9));
-if (is_array($checkList) && !empty($checkList)) {
-    echo '<font color="red">審核後的回饋金與原回饋金資料不一致，請先確認資料。</font><br>';
-}
+    $checkList = checkFeedbackMoneyReview($conn, substr($vr, -9));
+    if (is_array($checkList) && ! empty($checkList)) {
+        echo '<font color="red">審核後的回饋金與原回饋金資料不一致，請先確認資料。</font><br>';
+    }
 
-if (!empty($_SESSION['alert'])) {
-    $alert = 'alert("' . $_SESSION['alert'] . '");';
+    if (! empty($_SESSION['alert'])) {
+        $alert = 'alert("' . $_SESSION['alert'] . '");';
 
-    $_SESSION['alert'] = null;unset($_SESSION['alert']);
-}
+        $_SESSION['alert'] = null;unset($_SESSION['alert']);
+    }
 
-$relatedCase = '';
-$tax_hint    = '';
-$tLegalAllow = '';
-if (preg_match("/^\d{14}$/", $vr)) {
-    $sql = "SELECT c.cRelatedCase, c.cCaseHandler, c.cBankRelay, i.cCertifiedMoney
-            FROM tContractCase AS c LEFT JOIN `tContractIncome` AS i ON c.cCertifiedId = i.cCertifiedId 
+    $relatedCase = '';
+    $tax_hint    = '';
+    $tLegalAllow = '';
+    if (preg_match("/^\d{14}$/", $vr)) {
+        $sql = "SELECT c.cRelatedCase, c.cCaseHandler, c.cBankRelay, i.cCertifiedMoney
+            FROM tContractCase AS c LEFT JOIN `tContractIncome` AS i ON c.cCertifiedId = i.cCertifiedId
             WHERE c.cEscrowBankAccount = '" . $vr . "'";
-    $rs  = $conn->Execute($sql);
+        $rs = $conn->Execute($sql);
 
-    $relatedCase = $rs->fields['cRelatedCase'];
-    $bankRelay = $rs->fields['cBankRelay']; #代墊利息
-    $certifiedMoney = $rs->fields['cCertifiedMoney']; #履保費
+        $relatedCase    = $rs->fields['cRelatedCase'];
+        $bankRelay      = $rs->fields['cBankRelay'];      #代墊利息
+        $certifiedMoney = $rs->fields['cCertifiedMoney']; #履保費
 
-    //20241128新增法務案件判斷
-    $tLegalAllow = (!empty($rs->fields['cCaseHandler']) && ($rs->fields['cCaseHandler'] == 1)) ? '<input type="hidden" name="tLegalAllow" value="1">' : '';
-    if ($tLegalAllow) {
-        $alert .= 'alert("此案件為法務案件，請留意出款！！");';
-    }
-
-    //確認是否有代扣所得稅或二代健保
-    $sql = 'SELECT cTax, cNHITax, cInterest, bInterest  FROM tChecklist WHERE cCertifiedId = "' . substr($vr, -9) . '";';
-    $rs  = $conn->Execute($sql);
-
-    $_tax = [];
-    if (!$rs->EOF) {
-        if (!empty($rs->fields['cTax'])) {
-            $_tax[] = '10%所得稅';
+        //20241128新增法務案件判斷
+        $tLegalAllow = (! empty($rs->fields['cCaseHandler']) && ($rs->fields['cCaseHandler'] == 1)) ? '<input type="hidden" name="tLegalAllow" value="1">' : '';
+        if ($tLegalAllow) {
+            $alert .= 'alert("此案件為法務案件，請留意出款！！");';
         }
 
-        if (!empty($rs->fields['cNHITax'])) {
-            $_tax[] = '2.11%二代健保';
-        }
-        $interest = $rs->fields['cInterest'] + $rs->fields['bInterest']; //利息
-        if($interest == $certifiedMoney) {
-            echo '<font color="red">此案利息金額等於履保費，請提醒審核人員(佩琦、雅雯)需出款回饋金。</font><br>';
-        }
-    }
+        //確認是否有代扣所得稅或二代健保
+        $sql = 'SELECT cTax, cNHITax, cInterest, bInterest  FROM tChecklist WHERE cCertifiedId = "' . substr($vr, -9) . '";';
+        $rs  = $conn->Execute($sql);
 
-    if (!empty($_tax)) {
-        $tax_hint = implode('跟', $_tax);
-        $tax_hint = '<span style="margin-left: 10px;color: red;font-size: 10pt;font-weight:bold;">（此案件有' . $tax_hint . '，請留意出款！！）</span>';
+        $_tax = [];
+        if (! $rs->EOF) {
+            if (! empty($rs->fields['cTax'])) {
+                $_tax[] = '10%所得稅';
+            }
+
+            if (! empty($rs->fields['cNHITax'])) {
+                $_tax[] = '2.11%二代健保';
+            }
+            $interest = $rs->fields['cInterest'] + $rs->fields['bInterest']; //利息
+            if ($interest == $certifiedMoney) {
+                echo '<font color="red">此案利息金額等於履保費，請提醒審核人員(佩琦、雅雯)需出款回饋金。</font><br>';
+            }
+        }
+
+        if (! empty($_tax)) {
+            $tax_hint = implode('跟', $_tax);
+            $tax_hint = '<span style="margin-left: 10px;color: red;font-size: 10pt;font-weight:bold;">（此案件有' . $tax_hint . '，請留意出款！！）</span>';
+        }
+        $_tax = null;unset($_tax);
+        ##
     }
-    $_tax = null;unset($_tax);
-    ##
-}
 ?>
 <!DOCTYPE html
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -136,7 +136,7 @@ if (preg_match("/^\d{14}$/", $vr)) {
     }
     </style>
     <script>
-    <?=$alert?>
+    <?php echo $alert?>
 
     $(function() {
 
@@ -159,7 +159,7 @@ if (preg_match("/^\d{14}$/", $vr)) {
                     dataType: 'html',
                     data: {
                         radiokind: radiokind,
-                        vr: <?=$vr?>
+                        vr: <?php echo $vr?>
                     },
                 })
                 .done(function(msg) {
@@ -208,28 +208,28 @@ if (preg_match("/^\d{14}$/", $vr)) {
 <body>
     <div style="width:1290px; margin-bottom:5px; height:22px; background-color: #CCC">
 
-        <div style="float:left;margin-left: 10px;"> <a href="<?=$web_addr?>/bank/list2.php">待修改資料</a> </div>
+        <div style="float:left;margin-left: 10px;"> <a href="<?php echo $web_addr?>/bank/list2.php">待修改資料</a> </div>
         <?php
-if ($_SESSION["member_bankcheck"] == '1') { //個別權限顯示
-    ?>
-        <div style="float:left; margin-left: 10px;"> <a href="<?=$web_addr?>/bank/list.php">未審核列表</a></div>
+            if ($_SESSION["member_bankcheck"] == '1') { //個別權限顯示
+            ?>
+        <div style="float:left; margin-left: 10px;"> <a href="<?php echo $web_addr?>/bank/list.php">未審核列表</a></div>
         <?php
-}?>
+        }?>
     </div>
     <form id="form1" name="form1" method="post" action="out2.php">
-        <?=$tLegalAllow?>
+        <?php echo $tLegalAllow?>
 
         <table width="682" border="0">
             <tr>
                 <td colspan="4">專屬帳號:
-                    <input type="text" value="<?=$vr?>" disabled="disabled">
-                    <input type="hidden" name="vr_code" value="<?=$vr?>">
+                    <input type="text" value="<?php echo $vr?>" disabled="disabled">
+                    <input type="hidden" name="vr_code" value="<?php echo $vr?>">
                     <input type="hidden" name="saveX" id="saveX" value="ok" />
-                    <input type="hidden" name="bankRelay" value="<?=$bankRelay?>">
+                    <input type="hidden" name="bankRelay" value="<?php echo $bankRelay?>">
                     <?php if ($relatedCase): ?>
-                    <span style="color:red;border:1px solid #CCC;">連件:<?=$relatedCase?></span>
+                    <span style="color:red;border:1px solid #CCC;">連件:<?php echo $relatedCase?></span>
                     <?php endif?>
-                    <?php echo $tax_hint ?>
+<?php echo $tax_hint ?>
                 </td>
             </tr>
             <tr>
@@ -334,7 +334,7 @@ if ($_SESSION["member_bankcheck"] == '1') { //個別權限顯示
         </table>
     </form>
     <script type="text/javascript">
-    <?php if ($_REQUEST["ok"] == "1") {?>
+    <?php if (($_REQUEST["ok"] ?? '') == "1") {?>
     dhtmlx.alert({
         type: "alert-error",
         text: "新增成功"
