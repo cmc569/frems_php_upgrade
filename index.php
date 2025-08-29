@@ -8,7 +8,7 @@ if (session_status() != 2) {
     session_start();
 }
 
-if (!empty($_SESSION['member_job']) && ($_SESSION['member_job'] == 1) && !empty($_SESSION['member_id']) && !empty($_SESSION['member_pDep'])) {
+if (! empty($_SESSION['member_job']) && ($_SESSION['member_job'] == 1) && ! empty($_SESSION['member_id']) && ! empty($_SESSION['member_pDep'])) {
     //
     $conn = new first1DB;
     $sql  = 'SELECT pId FROM `tPeopleInfo` WHERE `pId` = :pid AND `pJob` = 1;';
@@ -18,7 +18,7 @@ if (!empty($_SESSION['member_job']) && ($_SESSION['member_job'] == 1) && !empty(
     unset($conn, $sql);
     ##
 
-    if (!empty($rs)) {
+    if (! empty($rs)) {
         $rs = null;unset($rs);
 
         if ($_SESSION['member_pDep'] == 7) {
@@ -36,9 +36,9 @@ if (!empty($_SESSION['member_job']) && ($_SESSION['member_job'] == 1) && !empty(
 session_destroy();
 unset($_COOKIE['member_id'], $_COOKIE['member_pDep'], $_COOKIE['member_session']);
 
-setcookie('member_id', null, -1, '/');
-setcookie('member_pDep', null, -1, '/');
-setcookie('member_session', null, -1, '/');
+setcookie('member_id', '', -1, '/');
+setcookie('member_pDep', '', -1, '/');
+setcookie('member_session', '', -1, '/');
 
 $remembered = '';
 if (isset($_COOKIE['act']) && isset($_COOKIE['psd'])) {
