@@ -18,9 +18,10 @@ function getRealty($_conn, $no = 0)
 }
 ##
 
-function getInterestTax($_conn, $iCertifiedId, $iIdentifyId) {
-    $sql = "SELECT * FROM `tInterestTax` WHERE  iCertifiedId='".$iCertifiedId."' AND iIdentifyId='".$iIdentifyId."'";
-    $rs = $_conn->Execute($sql);
+function getInterestTax($_conn, $iCertifiedId, $iIdentifyId)
+{
+    $sql = "SELECT * FROM `tInterestTax` WHERE  iCertifiedId='" . $iCertifiedId . "' AND iIdentifyId='" . $iIdentifyId . "'";
+    $rs  = $_conn->Execute($sql);
     return $rs->fields;
 }
 
@@ -30,29 +31,29 @@ function calculate($_id, $_int = 0)
     $_len = strlen($_id); // 個人10碼 公司8碼
 
     if (preg_match("/[A-Za-z]{2}/", $_id) || preg_match("/[a-zA-z]{1}[8|9]{1}[0-9]{8}/", $_id)) { //外國籍自然人(一般民眾)
-        $_o   = 1; // 外國籍自然人(一般民眾)
-        $_tax = 0.2; // 稅率：20%
-    } else if ($_len == '10') { // 個人10碼
+        $_o   = 1;                                                                                    // 外國籍自然人(一般民眾)
+        $_tax = 0.2;                                                                                  // 稅率：20%
+    } else if ($_len == '10') {                                                                   // 個人10碼
         return 0;
     } else if ($_len == '8') { // 公司8碼
         return 0;
     } else if ($_len == '7') {
         if (preg_match("/^9[0-9]{6}$/", $_id)) { // 判別是否為外國人
-            $_o   = 1; // 外國籍自然人(一般民眾)
-            $_tax = 0.2; // 稅率：20%
+            $_o   = 1;                               // 外國籍自然人(一般民眾)
+            $_tax = 0.2;                             // 稅率：20%
         } else {
             return 0;
         }
     }
 
-    return (($_o == 1) && !empty($_tax)) ? round($_int * $_tax) : 0;
+    return (($_o == 1) && ! empty($_tax)) ? round($_int * $_tax) : 0;
 }
 ##
 
 $tlog = new TraceLog();
 
-$cId  = $_REQUEST['cCertifiedId'];
-$save = $_REQUEST['save'];
+$cId  = isset($_REQUEST['cCertifiedId']) ? $_REQUEST['cCertifiedId'] : '';
+$save = isset($_REQUEST['save']) ? $_REQUEST['save'] : '';
 
 $cCertifiedId = substr($cId, 5);
 $_res         = '';
@@ -106,35 +107,35 @@ if ($save == 'ok') {
 
     //取得主要賣方
     $sql = '
-        SELECT 
+        SELECT
             cIdentifyId, cCategoryIdentify
-        FROM 
+        FROM
             tContractOwner
-        WHERE 
+        WHERE
             cId="' . $owner_cId . '";
     ';
     $owner = $conn->Execute($sql);
 
-    $_o = $tax->citizenship($owner->fields['cIdentifyId']);
-    $iTax = $tax->interestTax($_o, $owner_cInterestMoney);
+    $_o      = $tax->citizenship($owner->fields['cIdentifyId']);
+    $iTax    = $tax->interestTax($_o, $owner_cInterestMoney);
     $iNHITax = 0;
-    if($_o == 2 and $owner->fields['cCategoryIdentify'] == 1) {
+    if ($_o == 2 and $owner->fields['cCategoryIdentify'] == 1) {
         $iNHITax = $tax->NHITax($owner_cInterestMoney);
     }
     ##
 
     //新增已分利息稅額
-    $sql = 'UPDATE tInterestTax 
+    $sql = 'UPDATE tInterestTax
             SET `iTax` = "' . $iTax . '", `iNHITax` = "' . $iNHITax . '", updatedAt = NOW()
-            WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $owner->fields['cIdentifyId'].'"';
+            WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $owner->fields['cIdentifyId'] . '"';
     $rs = $conn->Execute($sql);
     //計算數量
-    $sql = 'SELECT * FROM tInterestTax  WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $owner->fields['cIdentifyId'].'"';
+    $sql = 'SELECT * FROM tInterestTax  WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $owner->fields['cIdentifyId'] . '"';
     $res = $conn->Execute($sql);
-    if($res->RecordCount() == 0) {
+    if ($res->RecordCount() == 0) {
         $sql = '
         INSERT INTO tInterestTax (iCertifiedId, iCategoryTarget, iCategoryIdentify, iIdentifyId, iTax, iNHITax)
-        VALUES ("'. $cCertifiedId .'", "1", "'. $owner->fields['cCategoryIdentify'] .'", "'. $owner->fields['cIdentifyId'] .'", "' . $iTax . '", "' . $iNHITax . '");
+        VALUES ("' . $cCertifiedId . '", "1", "' . $owner->fields['cCategoryIdentify'] . '", "' . $owner->fields['cIdentifyId'] . '", "' . $iTax . '", "' . $iNHITax . '");
         ';
         $conn->Execute($sql);
     }
@@ -154,35 +155,35 @@ if ($save == 'ok') {
     ##
     //取得主要賣方
     $sql = '
-        SELECT 
+        SELECT
             cIdentifyId, cCategoryIdentify
-        FROM 
+        FROM
             tContractBuyer
-        WHERE 
+        WHERE
             cId="' . $buyer_cId . '";
     ';
     $buyer = $conn->Execute($sql);
     ##
 
-    $_o = $tax->citizenship($buyer->fields['cIdentifyId']);
-    $iTax = $tax->interestTax($_o, $buyer_cInterestMoney);
+    $_o      = $tax->citizenship($buyer->fields['cIdentifyId']);
+    $iTax    = $tax->interestTax($_o, $buyer_cInterestMoney);
     $iNHITax = 0;
-    if($_o == 2 and $buyer->fields['cCategoryIdentify'] == 1) {
+    if ($_o == 2 and $buyer->fields['cCategoryIdentify'] == 1) {
         $iNHITax = $tax->NHITax($buyer_cInterestMoney);
     }
     ##
     //新增已分利息稅額
-    $sql = 'UPDATE tInterestTax 
+    $sql = 'UPDATE tInterestTax
             SET `iTax` = "' . $iTax . '", `iNHITax` = "' . $iNHITax . '", updatedAt = NOW()
-            WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $buyer->fields['cIdentifyId'].'"';
+            WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $buyer->fields['cIdentifyId'] . '"';
     $rs = $conn->Execute($sql);
     //計算數量
-    $sql = 'SELECT * FROM tInterestTax  WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $buyer->fields['cIdentifyId'].'"';
+    $sql = 'SELECT * FROM tInterestTax  WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $buyer->fields['cIdentifyId'] . '"';
     $res = $conn->Execute($sql);
-    if($res->RecordCount() == 0) {
+    if ($res->RecordCount() == 0) {
         $sql = '
         INSERT INTO tInterestTax (iCertifiedId, iCategoryTarget, iCategoryIdentify, iIdentifyId, iTax, iNHITax)
-        VALUES ("'. $cCertifiedId .'", "2", "'. $buyer->fields['cCategoryIdentify'] .'", "'. $buyer->fields['cIdentifyId'] .'", "' . $iTax . '", "' . $iNHITax . '");
+        VALUES ("' . $cCertifiedId . '", "2", "' . $buyer->fields['cCategoryIdentify'] . '", "' . $buyer->fields['cIdentifyId'] . '", "' . $iTax . '", "' . $iNHITax . '");
     ';
         $conn->Execute($sql);
     }
@@ -205,42 +206,47 @@ if ($save == 'ok') {
 
             //取得主要賣方
             $sql = '
-                SELECT 
+                SELECT
                     cIdentity, cIdentifyId, cInterestMoney
-                FROM 
+                FROM
                     tContractOthers
-                WHERE 
+                WHERE
                     cId="' . $v . '";
             ';
             $other = $conn->Execute($sql);
 
-            $_o = $tax->citizenship($other->fields['cIdentifyId']);
-            $iTax = $tax->interestTax($_o, ($int_arr[$k] + 1 - 1));
-            $iNHITax = 0;
+            $_o       = $tax->citizenship($other->fields['cIdentifyId']);
+            $iTax     = $tax->interestTax($_o, ($int_arr[$k] + 1 - 1));
+            $iNHITax  = 0;
             $category = 2;
             if (preg_match("/\w{10}/", $other->fields['cIdentifyId'])) {
                 $category = 1;
             }
 
-            if($_o == 2 and $category == 1) {
+            if ($_o == 2 and $category == 1) {
                 $iNHITax = $tax->NHITax(($int_arr[$k] + 1 - 1));
             }
             ##
-            if($other->fields['cIdentity'] == 1) $categoryTarget = 2;
-            if($other->fields['cIdentity'] == 2) $categoryTarget = 1;
+            if ($other->fields['cIdentity'] == 1) {
+                $categoryTarget = 2;
+            }
+
+            if ($other->fields['cIdentity'] == 2) {
+                $categoryTarget = 1;
+            }
 
             //新增已分利息稅額
-            $sql = 'UPDATE tInterestTax 
+            $sql = 'UPDATE tInterestTax
                     SET `iTax` = "' . $iTax . '", `iNHITax` = "' . $iNHITax . '", updatedAt = NOW()
-                    WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $other->fields['cIdentifyId'].'"';
+                    WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $other->fields['cIdentifyId'] . '"';
             $rs = $conn->Execute($sql);
             //計算數量
-            $sql = 'SELECT * FROM tInterestTax  WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $other->fields['cIdentifyId'].'"';
+            $sql = 'SELECT * FROM tInterestTax  WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $other->fields['cIdentifyId'] . '"';
             $res = $conn->Execute($sql);
-            if($res->RecordCount() == 0) {
+            if ($res->RecordCount() == 0) {
                 $sql = '
                     INSERT INTO tInterestTax (iCertifiedId, iCategoryTarget, iCategoryIdentify, iIdentifyId, iTax, iNHITax)
-                    VALUES ("'. $cCertifiedId .'", "'. $categoryTarget .'", "'. $category .'", "'. $other->fields['cIdentifyId'] .'", "' . $iTax . '", "' . $iNHITax . '");
+                    VALUES ("' . $cCertifiedId . '", "' . $categoryTarget . '", "' . $category . '", "' . $other->fields['cIdentifyId'] . '", "' . $iTax . '", "' . $iNHITax . '");
                     ';
                 $conn->Execute($sql);
             }
@@ -272,33 +278,45 @@ if ($save == 'ok') {
     $sql = '
         SELECT cCertifyId, cBranchNum, cBranchNum1, cBranchNum2, cBranchNum3, cSerialNumber, cSerialNumber1, cSerialNumber2, cSerialNumber3
         FROM tContractRealestate
-        WHERE 
+        WHERE
             cId="' . $realty_cId . '"
             ';
     $realestate = $conn->Execute($sql);
-    $_o = 2;
-    $iNHITax = 0;
+    $_o         = 2;
+    $iNHITax    = 0;
     ##
 
     //新增已分利息稅額
-    for($i = 0; $i < 4; $i++) {
-        if($i == 0) { $money = $realty;  $iTax = $tax->interestTax($_o, $realty);  $iIdentifyId = $realestate->fields['cSerialNumber']; $branchNum = $realestate->fields['cBranchNum']; }
-        if($i == 1) { $money = $realty1; $iTax = $tax->interestTax($_o, $realty1); $iIdentifyId = $realestate->fields['cSerialNumber1']; $branchNum = $realestate->fields['cBranchNum1']; }
-        if($i == 2) { $money = $realty2; $iTax = $tax->interestTax($_o, $realty2); $iIdentifyId = $realestate->fields['cSerialNumber2']; $branchNum = $realestate->fields['cBranchNum2'];}
-        if($i == 3) { $money = $realty3; $iTax = $tax->interestTax($_o, $realty3); $iIdentifyId = $realestate->fields['cSerialNumber3']; $branchNum = $realestate->fields['cBranchNum3'];}
+    for ($i = 0; $i < 4; $i++) {
+        if ($i == 0) {$money = $realty;
+            $iTax                             = $tax->interestTax($_o, $realty);
+            $iIdentifyId                      = $realestate->fields['cSerialNumber'];
+            $branchNum                        = $realestate->fields['cBranchNum'];}
+        if ($i == 1) {$money = $realty1;
+            $iTax                             = $tax->interestTax($_o, $realty1);
+            $iIdentifyId                      = $realestate->fields['cSerialNumber1'];
+            $branchNum                        = $realestate->fields['cBranchNum1'];}
+        if ($i == 2) {$money = $realty2;
+            $iTax                             = $tax->interestTax($_o, $realty2);
+            $iIdentifyId                      = $realestate->fields['cSerialNumber2'];
+            $branchNum                        = $realestate->fields['cBranchNum2'];}
+        if ($i == 3) {$money = $realty3;
+            $iTax                             = $tax->interestTax($_o, $realty3);
+            $iIdentifyId                      = $realestate->fields['cSerialNumber3'];
+            $branchNum                        = $realestate->fields['cBranchNum3'];}
 
-        if($branchNum != 0) {
-            $sql = 'UPDATE tInterestTax 
+        if ($branchNum != 0) {
+            $sql = 'UPDATE tInterestTax
                 SET `iTax` = "' . $iTax . '", `iNHITax` = "' . $iNHITax . '", updatedAt = NOW()
-                WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $iIdentifyId.'" AND iBranchNum = "' . $branchNum . '"';
+                WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $iIdentifyId . '" AND iBranchNum = "' . $branchNum . '"';
             $rs = $conn->Execute($sql);
             //計算數量
-            $sql = 'SELECT * FROM tInterestTax WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $iIdentifyId.'" AND iBranchNum = "' . $branchNum . '"';
+            $sql = 'SELECT * FROM tInterestTax WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $iIdentifyId . '" AND iBranchNum = "' . $branchNum . '"';
             $res = $conn->Execute($sql);
-            if($res->RecordCount() == 0) {
+            if ($res->RecordCount() == 0) {
                 $sql = '
             INSERT INTO tInterestTax (iCertifiedId, iCategoryTarget, iCategoryIdentify, iIdentifyId, iTax, iNHITax, iBranchNum)
-            VALUES ("'. $cCertifiedId .'", "3", "2", "'. $iIdentifyId .'", "' . $iTax . '", "' . $iNHITax . '", "' . $branchNum . '");
+            VALUES ("' . $cCertifiedId . '", "3", "2", "' . $iIdentifyId . '", "' . $iTax . '", "' . $iNHITax . '", "' . $branchNum . '");
             ';
                 $conn->Execute($sql);
             }
@@ -325,30 +343,30 @@ if ($save == 'ok') {
         SELECT cs.cCertifiedId, s.sIdentifyId, cs.cInterestMoney
         FROM `tContractScrivener` AS cs
             LEFT JOIN `tScrivener` AS s ON cs.cScrivener = s.sId
-        WHERE 
+        WHERE
             cId="' . $scrivener_cId . '"
         ';
 
     $scrivenerInfo = $conn->Execute($sql);
-    $_o = 2; //本國人
-    $iTax = $tax->interestTax($_o, $scrivener);
-    $iNHITax = 0;
+    $_o            = 2; //本國人
+    $iTax          = $tax->interestTax($_o, $scrivener);
+    $iNHITax       = 0;
 
     $iNHITax = $tax->NHITax($scrivener);
     ##
 
     //新增已分利息稅額
-    $sql = 'UPDATE tInterestTax 
+    $sql = 'UPDATE tInterestTax
             SET `iTax` = "' . $iTax . '", `iNHITax` = "' . $iNHITax . '", updatedAt = NOW()
-            WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $scrivenerInfo->fields['sIdentifyId'].'"';
+            WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $scrivenerInfo->fields['sIdentifyId'] . '"';
     $rs = $conn->Execute($sql);
     //計算數量
-    $sql = 'SELECT * FROM tInterestTax WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $scrivenerInfo->fields['sIdentifyId'].'"';
+    $sql = 'SELECT * FROM tInterestTax WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $scrivenerInfo->fields['sIdentifyId'] . '"';
     $res = $conn->Execute($sql);
-    if($res->RecordCount() == 0) {
+    if ($res->RecordCount() == 0) {
         $sql = '
         INSERT INTO tInterestTax (iCertifiedId, iCategoryTarget, iCategoryIdentify, iIdentifyId, iTax, iNHITax)
-        VALUES ("'. $cCertifiedId .'", "4", "1", "'. $scrivenerInfo->fields['sIdentifyId'] .'", "' . $iTax . '", "' . $iNHITax . '");
+        VALUES ("' . $cCertifiedId . '", "4", "1", "' . $scrivenerInfo->fields['sIdentifyId'] . '", "' . $iTax . '", "' . $iNHITax . '");
     ';
         $conn->Execute($sql);
     }
@@ -372,55 +390,55 @@ if ($save == 'ok') {
 
         //取得指定對象
         $sql = '
-                SELECT 
+                SELECT
                     cDBName, cIdentifyId, cInterestMoney
-                FROM 
+                FROM
                     tContractInterestExt
-                WHERE 
+                WHERE
                     cId="' . $_POST['another_cId'][$i] . '";
             ';
         $ext = $conn->Execute($sql);
 
-        $_o = $tax->citizenship($ext->fields['cIdentifyId']);
-        $iTax = $tax->interestTax($_o, $ext->fields['cInterestMoney']);
-        $iNHITax = 0;
+        $_o       = $tax->citizenship($ext->fields['cIdentifyId']);
+        $iTax     = $tax->interestTax($_o, $ext->fields['cInterestMoney']);
+        $iNHITax  = 0;
         $category = 2;
         if (preg_match("/\w{10}/", $ext->fields['cIdentifyId'])) {
             $category = 1;
         }
 
-        if($_o == 2 and $category == 1) {
+        if ($_o == 2 and $category == 1) {
             $iNHITax = $tax->NHITax($ext->fields['cInterestMoney']);
         }
         ##
 
         //指定對象 身分別1:賣 2:買 3:仲 4:地
-        if(in_array($ext->fields['cDBName'], ['tContractOwner', 'tContractOthersO'])) { $categoryTarget = 1; }
-        if(in_array($ext->fields['cDBName'], ['tContractBuyer', 'tContractOthersB'])) { $categoryTarget = 2; }
-        if(in_array($ext->fields['cDBName'], ['tContractRealestate', 'tContractRealestate1', 'tContractRealestate2', 'tContractRealestate3'])) { $categoryTarget = 3; }
-        if($ext->fields['cDBName'] == 'tContractScrivener') { $categoryTarget = 4; }
+        if (in_array($ext->fields['cDBName'], ['tContractOwner', 'tContractOthersO'])) {$categoryTarget = 1;}
+        if (in_array($ext->fields['cDBName'], ['tContractBuyer', 'tContractOthersB'])) {$categoryTarget = 2;}
+        if (in_array($ext->fields['cDBName'], ['tContractRealestate', 'tContractRealestate1', 'tContractRealestate2', 'tContractRealestate3'])) {$categoryTarget = 3;}
+        if ($ext->fields['cDBName'] == 'tContractScrivener') {$categoryTarget = 4;}
         ##
 
         //新增已分利息稅額
-        $sql = 'UPDATE tInterestTax 
+        $sql = 'UPDATE tInterestTax
                 SET `iTax` = "' . $iTax . '", `iNHITax` = "' . $iNHITax . '", updatedAt = NOW()
-                WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $ext->fields['cIdentifyId'].'"';
+                WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $ext->fields['cIdentifyId'] . '"';
         $rs = $conn->Execute($sql);
 
         //計算數量
-        $sql = 'SELECT * FROM tInterestTax WHERE iCertifiedId = "'. $cCertifiedId .'" AND iIdentifyId = "'. $ext->fields['cIdentifyId'].'"';
+        $sql = 'SELECT * FROM tInterestTax WHERE iCertifiedId = "' . $cCertifiedId . '" AND iIdentifyId = "' . $ext->fields['cIdentifyId'] . '"';
         $res = $conn->Execute($sql);
-        if($res->RecordCount() == 0) {
+        if ($res->RecordCount() == 0) {
             $sql = '
                     INSERT INTO tInterestTax (iCertifiedId, iCategoryTarget, iCategoryIdentify, iIdentifyId, iTax, iNHITax)
-                    VALUES ("'. $cCertifiedId .'", "'. $categoryTarget .'", "'. $category .'", "'. $ext->fields['cIdentifyId'] .'", "' . $iTax . '", "' . $iNHITax . '");
+                    VALUES ("' . $cCertifiedId . '", "' . $categoryTarget . '", "' . $category . '", "' . $ext->fields['cIdentifyId'] . '", "' . $iTax . '", "' . $iNHITax . '");
                     ';
             $conn->Execute($sql);
         }
         ##
     }
 
-    //更新點交表利息欄位
+               //更新點交表利息欄位
     $bInt = 0; //買方總利息
     $oInt = 0; //賣方總利息
 
@@ -448,7 +466,7 @@ if ($save == 'ok') {
 	';
     $rs = $conn->Execute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $bInt += $rs->fields['cInterestMoney'];
         $rs->MoveNext();
     }
@@ -477,7 +495,7 @@ if ($save == 'ok') {
 	';
     $rs = $conn->Execute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $oInt += $rs->fields['cInterestMoney'];
         $rs->MoveNext();
     }
@@ -487,7 +505,7 @@ if ($save == 'ok') {
 
     $rs = $conn->Execute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
 
         if ($rs->fields['cDBName'] == 'tContractOwner' || $rs->fields['cDBName'] == 'tContractOthersO') {
             $oInt += $rs->fields['cInterestMoney'];
@@ -510,7 +528,7 @@ if ($save == 'ok') {
     $sql = 'SELECT cIdentifyId, cInterestMoney FROM tContractOwner WHERE cCertifiedId = "' . $cCertifiedId . '";'; //主賣方
     $rs  = $conn->Execute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $_id  = $rs->fields['cIdentifyId'];
         $_int = (int) $rs->fields['cInterestMoney'];
 
@@ -525,7 +543,7 @@ if ($save == 'ok') {
     $sql = 'SELECT cIdentifyId, cInterestMoney FROM tContractOthers WHERE cCertifiedId = "' . $cCertifiedId . '" AND cIdentity = "2";'; //其他賣方
     $rs  = $conn->Execute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $_id  = $rs->fields['cIdentifyId'];
         $_int = (int) $rs->fields['cInterestMoney'];
 
@@ -581,17 +599,17 @@ $sql = '
 ';
 $rs = $conn->Execute($sql);
 
-$cEscrowBankAccount = $rs->fields['cEscrowBankAccount'];
+$cEscrowBankAccount = isset($rs->fields['cEscrowBankAccount']) ? $rs->fields['cEscrowBankAccount'] : '';
 
 $o_no   = 0;
 $b_no   = 0;
 $_index = 0;
 
 //若有搜尋到資料
-if ($rs->fields['cCertifiedId']) {
+if (isset($rs->fields['cCertifiedId']) && $rs->fields['cCertifiedId']) {
 
-    $cSignCategory = $rs->fields['cSignCategory']; //判斷合約書位置
-    //取得利息
+    $cSignCategory = isset($rs->fields['cSignCategory']) ? $rs->fields['cSignCategory'] : ''; //判斷合約書位置
+                                                                                              //取得利息
     $_bal           = 0;
     $_b             = $rs->fields['bInterest'] + 1 - 1;
     $_c             = $rs->fields['cInterest'] + 1 - 1;
@@ -612,14 +630,14 @@ if ($rs->fields['cCertifiedId']) {
     //合約書中第一位賣方
     $i   = 0;
     $sql = '
-        SELECT * 
+        SELECT *
         FROM tContractOwner AS o
-        LEFT JOIN tInterestTax AS t 
+        LEFT JOIN tInterestTax AS t
         ON (o.cCertifiedId = t.iCertifiedId AND o.cIdentifyId = t.iIdentifyId)
         WHERE o.cCertifiedId="' . $cCertifiedId . '" ;';
     $rsO = $conn->Execute($sql);
 
-    while (!$rsO->EOF) {
+    while (! $rsO->EOF) {
 
         $data_o[$i]        = $rsO->fields;
         $data_o[$i]['tbl'] = 'tContractOwner';
@@ -642,16 +660,16 @@ if ($rs->fields['cCertifiedId']) {
     $i   = 0;
     $j   = 2;
     $sql = '
-            SELECT * 
+            SELECT *
             FROM tContractOthers AS o
-            LEFT JOIN tInterestTax AS t 
+            LEFT JOIN tInterestTax AS t
             ON (o.cCertifiedId = t.iCertifiedId AND o.cIdentifyId=t.iIdentifyId)
-            WHERE cCertifiedId="' . $cCertifiedId . '" 
+            WHERE cCertifiedId="' . $cCertifiedId . '"
             AND o.cIdentity="2" ORDER BY cId ASC;
             ';
     $rsA = $conn->Execute($sql);
 
-    while (!$rsA->EOF) {
+    while (! $rsA->EOF) {
 
         $data_o2[$i]        = $rsA->fields;
         $data_o2[$i]['tbl'] = 'tContractOthersO';
@@ -691,12 +709,12 @@ if ($rs->fields['cCertifiedId']) {
     $i   = 0;
     $sql = 'SELECT *
             FROM tContractBuyer AS b
-            LEFT JOIN tInterestTax AS t 
+            LEFT JOIN tInterestTax AS t
             ON (b.cCertifiedId = t.iCertifiedId AND b.cIdentifyId = t.iIdentifyId)
             WHERE b.cCertifiedId="' . $cCertifiedId . '";';
     $rsB = $conn->Execute($sql);
 
-    while (!$rsB->EOF) {
+    while (! $rsB->EOF) {
 
         $data_b[$i]        = $rsB->fields;
         $data_b[$i]['tbl'] = 'tContractBuyer';
@@ -715,16 +733,16 @@ if ($rs->fields['cCertifiedId']) {
     $i   = 0;
     $j   = 2;
     $sql = '
-            SELECT * 
+            SELECT *
             FROM tContractOthers AS o
-            LEFT JOIN tInterestTax AS t 
+            LEFT JOIN tInterestTax AS t
             ON (o.cCertifiedId = t.iCertifiedId AND o.cIdentifyId = t.iIdentifyId)
-            WHERE cCertifiedId="' . $cCertifiedId . '" 
-            AND cIdentity="1" 
+            WHERE cCertifiedId="' . $cCertifiedId . '"
+            AND cIdentity="1"
             ORDER BY cId ASC;';
     $rsA = $conn->Execute($sql);
 
-    while (!$rsA->EOF) {
+    while (! $rsA->EOF) {
 
         $data_b2[$i]        = $rsA->fields;
         $data_b2[$i]['tbl'] = 'tContractOthersB';
@@ -761,7 +779,7 @@ if ($rs->fields['cCertifiedId']) {
 
     //仲介
     $r_no           = 0;
-    $realty_another = array();
+    $realty_another = [];
     $sql            = 'SELECT * FROM tContractRealestate WHERE cCertifyId="' . $cCertifiedId . '" ;';
     $rsR            = $conn->Execute($sql);
     if ($rsR->RecordCount() > 0) {
@@ -776,8 +794,8 @@ if ($rs->fields['cCertifiedId']) {
                 $data_r[$r_no]['ck'] = 'checked=checked';
             }
             $interestTax = getInterestTax($conn, $cCertifiedId, $rsR->fields['cSerialNumber']);
-            if($interestTax) {
-                $data_r[$r_no]['iTax'] = $interestTax['iTax'];
+            if ($interestTax) {
+                $data_r[$r_no]['iTax']    = $interestTax['iTax'];
                 $data_r[$r_no]['iNHITax'] = $interestTax['iNHITax'];
             }
 
@@ -807,8 +825,8 @@ if ($rs->fields['cCertifiedId']) {
                 $data_r[$r_no]['ck'] = 'checked=checked';
             }
             $interestTax = getInterestTax($conn, $cCertifiedId, $rsR->fields['cSerialNumber1']);
-            if($interestTax) {
-                $data_r[$r_no]['iTax'] = $interestTax['iTax'];
+            if ($interestTax) {
+                $data_r[$r_no]['iTax']    = $interestTax['iTax'];
                 $data_r[$r_no]['iNHITax'] = $interestTax['iNHITax'];
             }
             $data_r[$r_no]['tbl']       = 'tContractRealestate1';
@@ -846,8 +864,8 @@ if ($rs->fields['cCertifiedId']) {
                 $data_r[$r_no]['ck'] = 'checked=checked';
             }
             $interestTax = getInterestTax($conn, $cCertifiedId, $rsR->fields['cSerialNumber2']);
-            if($interestTax) {
-                $data_r[$r_no]['iTax'] = $interestTax['iTax'];
+            if ($interestTax) {
+                $data_r[$r_no]['iTax']    = $interestTax['iTax'];
                 $data_r[$r_no]['iNHITax'] = $interestTax['iNHITax'];
             }
             $data_r[$r_no]['tbl']       = 'tContractRealestate2';
@@ -884,8 +902,8 @@ if ($rs->fields['cCertifiedId']) {
                 $data_r[$r_no]['ck'] = 'checked=checked';
             }
             $interestTax = getInterestTax($conn, $cCertifiedId, $rsR->fields['cSerialNumber3']);
-            if($interestTax) {
-                $data_r[$r_no]['iTax'] = $interestTax['iTax'];
+            if ($interestTax) {
+                $data_r[$r_no]['iTax']    = $interestTax['iTax'];
                 $data_r[$r_no]['iNHITax'] = $interestTax['iNHITax'];
             }
             $data_r[$r_no]['tbl']       = 'tContractRealestate3';
@@ -942,8 +960,8 @@ if ($rs->fields['cCertifiedId']) {
         $data_s[$s_no]['sName'] = $_rs->fields['sName'];
         //計算利息稅 二代健保
         $interestTax = getInterestTax($conn, $cCertifiedId, $_rs->fields['sIdentifyId']);
-        if($interestTax) {
-            $data_s[$s_no]['iTax'] = $interestTax['iTax'];
+        if ($interestTax) {
+            $data_s[$s_no]['iTax']    = $interestTax['iTax'];
             $data_s[$s_no]['iNHITax'] = $interestTax['iNHITax'];
         }
 
@@ -979,21 +997,21 @@ if ($rs->fields['cCertifiedId']) {
 function another($conn, $cCertifiedId, $type, $tbl, $id)
 {
 
-    $sql = "SELECT 
-                * 
-            FROM 
+    $sql = "SELECT
+                *
+            FROM
                 tContractInterestExt AS e
-                LEFT JOIN tInterestTax AS t 
+                LEFT JOIN tInterestTax AS t
                 ON (e.cCertifiedId = t.iCertifiedId AND e.cIdentifyId = t.iIdentifyId)
-            WHERE 
-                cCertifiedId='" . $cCertifiedId . "' 
-                AND cDBName ='" . $tbl . "' 
+            WHERE
+                cCertifiedId='" . $cCertifiedId . "'
+                AND cDBName ='" . $tbl . "'
                 AND cTBId='" . $id . "'";
 
     $rs = $conn->Execute($sql);
 
     $i = 0;
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
 
         $arr[$i] = $rs->fields;
 
@@ -1034,8 +1052,9 @@ function bankdate($conn, $cEscrowBankAccount)
 	';
 
     $rs = $conn->Execute($sql_tra);
-    // $arr_tra[] = '' ;
-    while (!$rs->EOF) {
+                        // $arr_tra[] = '' ;
+    $cCertifyDate = ''; // 初始化變數
+    while (! $rs->EOF) {
 
         $cCertifyDate = $rs->fields['tBankLoansDate'];
 
@@ -1055,7 +1074,25 @@ $rs = $conn->Execute($sql);
 $close = $rs->fields['cInvoiceClose']; //
 ##
 
-if('N' == $data_o[0]['cInterestEdit']) {
+// 初始化變數，避免 Undefined variable 警告
+$data_o         = isset($data_o) ? $data_o : [];
+$interest_total = isset($interest_total) ? $interest_total : 0;
+$_bal           = isset($_bal) ? $_bal : 0;
+$BankListChk    = isset($BankListChk) ? $BankListChk : '';
+$bankList       = isset($bankList) ? $bankList : '';
+$cCertifyDate   = isset($cCertifyDate) ? $cCertifyDate : '';
+$data_o2        = isset($data_o2) ? $data_o2 : [];
+$data_b         = isset($data_b) ? $data_b : [];
+$data_b2        = isset($data_b2) ? $data_b2 : [];
+$data_r         = isset($data_r) ? $data_r : [];
+$data_s         = isset($data_s) ? $data_s : [];
+$owner_another  = isset($owner_another) ? $owner_another : [];
+$buyer_another  = isset($buyer_another) ? $buyer_another : [];
+$realty_another = isset($realty_another) ? $realty_another : [];
+$scr_another    = isset($scr_another) ? $scr_another : [];
+$_show          = isset($_show) ? $_show : '';
+
+if (isset($data_o[0]['cInterestEdit']) && 'N' == $data_o[0]['cInterestEdit']) {
     $_bal = 0;
 }
 
@@ -1085,6 +1122,8 @@ $smarty->assign('scr_another', $scr_another);
 // echo 'cSignCategory='.$cSignCategory;
 // exit;
 ##
+// 確保 $cSignCategory 已定義
+$cSignCategory = isset($cSignCategory) ? $cSignCategory : '';
 $smarty->assign('cSignCategory', $cSignCategory);
 
 $smarty->display('int_dealing.inc.tpl', '', 'escrow');
