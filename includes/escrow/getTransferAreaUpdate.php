@@ -5,13 +5,13 @@ require_once dirname(dirname(__DIR__)) . '/session_check.php';
 require_once dirname(dirname(__DIR__)) . '/first1DB.php';
 
 $cId = $_POST['cId'];
-if (!preg_match("/^\d{9}$/", $cId)) {
+if (! preg_match("/^\d{9}$/", $cId)) {
     http_response_code(400);
     exit('Invalid certified ID');
 }
 
 $target = $_POST['target'];
-if (!in_array($target, ['1', '2', '3', '4', '5'])) {
+if (! in_array($target, ['1', '2', '3', '4', '5'])) {
     http_response_code(400);
     exit('Unknown target');
 }
@@ -46,14 +46,14 @@ if (empty($power2)) {
     exit('Unknown power2');
 }
 
-$before = $_POST['before'];
+$before = isset($_POST['before']) ? $_POST['before'] : '';
 
 $conn = new first1DB;
 
 $conn->beginTransaction();
 
 try {
-    //刪除所有該案件對應的身分證號使用者權利範圍紀錄
+                                                                                                                               //刪除所有該案件對應的身分證號使用者權利範圍紀錄
     $sql = 'DELETE FROM tContractTransferArea WHERE cCertifiedId = :cId AND cTarget = :target AND cIdentifyId = :identifyId;'; //先清除所有紀錄，成功後再新增
     $conn->exeSql($sql, ['cId' => $cId, 'target' => $target, 'identifyId' => $identifyId]);
 
@@ -82,7 +82,7 @@ try {
     $conn->exeSql($sql);
 
     //新增身分證號使用者前次紀錄
-    if (!empty($before)) {
+    if (! empty($before)) {
         $values = [];
         foreach ($before as $v) {
             list($_identify_no, $_land_item, $_item) = explode('-', $v);

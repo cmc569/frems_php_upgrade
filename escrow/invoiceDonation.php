@@ -1,18 +1,18 @@
 <?php
-require_once dirname(__DIR__) . '/first1DB.php';
-require_once dirname(__DIR__) . '/session_check.php';
+    require_once dirname(__DIR__) . '/first1DB.php';
+    require_once dirname(__DIR__) . '/session_check.php';
 
-$alert = '';
+    $alert = '';
 
-$identify_id = empty($_GET['identify_id']) ? '' : $_GET['identify_id'];
-$target      = empty($_GET['target']) ? '' : $_GET['target'];
+    $identify_id = isset($_GET['identify_id']) ? $_GET['identify_id'] : '';
+    $target      = empty($_GET['target']) ? '' : $_GET['target'];
 
-$conn = new first1DB;
-// print_r($conn);exit;
+    $conn = new first1DB;
+    // print_r($conn);exit;
 
-if ($_POST['identify_id'] && $_POST['target'] && $_POST['donation']) {
-    //儲存發票捐贈單位
-    $sql = 'INSERT INTO
+    if (isset($_POST['identify_id'], $_POST['target'], $_POST['donation']) && $_POST['identify_id'] && $_POST['target'] && $_POST['donation']) {
+        //儲存發票捐贈單位
+        $sql = 'INSERT INTO
                 tInvoiceDonationDefault
             (
                 iIdentifyId,
@@ -25,38 +25,38 @@ if ($_POST['identify_id'] && $_POST['target'] && $_POST['donation']) {
                 :settingFrom,
                 NOW()
             );';
-    $conn->exeSql($sql, [
-        'id'          => $_POST['identify_id'],
-        'donation'    => $_POST['donation'],
-        'settingFrom' => 'S',
-    ]);
+        $conn->exeSql($sql, [
+            'id'          => isset($_POST['identify_id']) ? $_POST['identify_id'] : '',
+            'donation'    => isset($_POST['donation']) ? $_POST['donation'] : '',
+            'settingFrom' => 'S',
+        ]);
 
-    $alert = 'alert("設定完成");';
+        $alert = 'alert("設定完成");';
 
-    $identify_id = $_POST['identify_id'];
-    $target      = $_POST['target'];
-    $donation    = $_POST['donation'];
+        $identify_id = isset($_POST['identify_id']) ? $_POST['identify_id'] : '';
+        $target      = isset($_POST['target']) ? $_POST['target'] : '';
+        $donation    = isset($_POST['donation']) ? $_POST['donation'] : '';
 
-}
+    }
 
-if (!preg_match("/^\w+$/", $identify_id)) {
-    exit('未知的身分證號');
-}
+    if (! preg_match("/^\w+$/", $identify_id)) {
+        exit('未知的身分證號');
+    }
 
-if (empty($target) || !in_array($target, ['owner', 'buyer', 'other_owner', 'other_buyer'])) {
-    exit('無法確認對象身分');
-}
+    if (empty($target) || ! in_array($target, ['owner', 'buyer', 'other_owner', 'other_buyer'])) {
+        exit('無法確認對象身分');
+    }
 
-//是否有預設愛心碼
-$sql = 'SELECT iDonationCode FROM tInvoiceDonationDefault WHERE iIdentifyId = :identify_id ORDER BY iCreatedAt DESC LIMIT 1';
-$rs  = $conn->one($sql, ['identify_id' => $identify_id]);
+    //是否有預設愛心碼
+    $sql = 'SELECT iDonationCode FROM tInvoiceDonationDefault WHERE iIdentifyId = :identify_id ORDER BY iCreatedAt DESC LIMIT 1';
+    $rs  = $conn->one($sql, ['identify_id' => $identify_id]);
 
-$default_donation = empty($rs) ? '8585' : $rs['iDonationCode']; //若查無預設愛心碼，則預設為 8585(財團法人台灣兒童暨家庭扶助基金會)
-// echo $default_donation;
+    $default_donation = empty($rs) ? '8585' : $rs['iDonationCode']; //若查無預設愛心碼，則預設為 8585(財團法人台灣兒童暨家庭扶助基金會)
+                                                                    // echo $default_donation;
 
-//
-$sql = 'SELECT iCode, iAlias, iName FROM tInvoiceDonationCode ORDER BY iName ASC';
-$rs  = $conn->all($sql);
+    //
+    $sql = 'SELECT iCode, iAlias, iName FROM tInvoiceDonationCode ORDER BY iName ASC';
+    $rs  = $conn->all($sql);
 
 ?>
 
@@ -71,7 +71,7 @@ $rs  = $conn->all($sql);
     <script src="/js/1.13.3/combobox.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
     <script>
-    <?=$alert?>
+    <?php echo $alert ?>
 
     $(document).ready(function() {
         $("#combobox").combobox({
@@ -122,8 +122,8 @@ $rs  = $conn->all($sql);
                 </label>
                 <select name="donation" id="combobox">
                     <?php foreach ($rs as $v) {?>
-                    <option value="<?php echo $v['iCode']; ?>" <?php if ($v['iCode'] == $default_donation) {
-    echo ' selected';
+                    <option value="<?php echo $v['iCode']; ?>"<?php if ($v['iCode'] == $default_donation) {
+        echo ' selected';
 }
     ?>>
                         <?php echo $v['iName']; ?>（捐贈碼：<?php echo $v['iCode']; ?>）

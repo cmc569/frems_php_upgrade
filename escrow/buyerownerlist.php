@@ -4,7 +4,6 @@ require_once dirname(__DIR__) . '/class/SmartyMain.class.php';
 require_once dirname(__DIR__) . '/class/advance.class.php';
 require_once dirname(__DIR__) . '/session_check.php';
 require_once dirname(__DIR__) . '/openadodb.php';
-require_once dirname(__DIR__) . '/opendb.php';
 require_once dirname(__DIR__) . '/includes/lib.php';
 require_once dirname(__DIR__) . '/tracelog.php';
 require_once dirname(__DIR__) . '/includes/lib.php';
@@ -18,11 +17,12 @@ $tlog->updateWrite($_SESSION['member_id'], json_encode($_POST), '多買賣');
 $_POST    = escapeStr($_POST);
 $_REQUEST = escapeStr($_REQUEST);
 
-$_iden        = $_REQUEST['iden'];
-$save         = $_REQUEST['save'];
-$del          = $_POST['del'];
-$cCertifiedId = $_REQUEST['cCertifyId'];
-$cCaseStatus = $_REQUEST['cCaseStatus'] ? $_REQUEST['cCaseStatus'] : 0;
+// 安全讀取外部輸入，避免 undefined index warnings
+$_iden        = isset($_REQUEST['iden']) ? $_REQUEST['iden'] : '';
+$save         = isset($_REQUEST['save']) ? $_REQUEST['save'] : '';
+$del          = isset($_POST['del']) ? $_POST['del'] : '';
+$cCertifiedId = isset($_REQUEST['cCertifyId']) ? $_REQUEST['cCertifyId'] : '';
+$cCaseStatus  = isset($_REQUEST['cCaseStatus']) && $_REQUEST['cCaseStatus'] ? $_REQUEST['cCaseStatus'] : 0;
 
 if ($_iden == 'o') { // 賣：2
     $_ide      = '賣';
@@ -76,8 +76,10 @@ $sql = 'SELECT
 $rs    = $conn->Execute($sql);
 $total = $rs->RecordCount();
 
-$i = 0;
-while (!$rs->EOF) {
+// 預先初始化 list，避免模板或後續使用時未定義
+$list = [];
+$i    = 0;
+while (! $rs->EOF) {
     $list[$i]              = $rs->fields;
     $list[$i]['no']        = $i + 1;
     $checklistCheckedCount = 0;
@@ -107,7 +109,9 @@ while (!$rs->EOF) {
     $list[$i]['OtherBank']       = getBankAccount($list[$i]['cCertifiedId'], $BankIden, $list[$i]['cId']);
     $list[$i]['OtherBankCount']  = count($list[$i]['OtherBank']);
 
-    //比對是否要將全部的勾選起來
+    // 預設 BankChecked，避免模板取值時未定義
+    $list[$i]['BankChecked'] = '';
+    // 比對是否要將全部的勾選起來
     if ($checklistCheckedCount == ($list[$i]['OtherBankCount'] + 1)) {
         $list[$i]['BankChecked'] = 'checked=checked';
     }
@@ -121,7 +125,7 @@ $sql = "SELECT * FROM  `data_country` Order by cCountry; ";
 $rs  = $conn->Execute($sql);
 
 $menuCountry[0] = '請選擇';
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $menuCountry[$rs->fields['cCode']] = $rs->fields['cCountry'];
     $rs->MoveNext();
 }
@@ -131,7 +135,7 @@ $sql = 'SELECT DISTINCT zCity FROM tZipArea ORDER BY nid ASC';
 $rs  = $conn->CacheExecute($sql);
 
 $menuCity[0] = "縣市";
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $menuCity[$rs->fields['zCity']] = $rs->fields['zCity'];
     $rs->MoveNext();
 }
@@ -142,7 +146,7 @@ $menuBankBranch[0] = '';
 $sql               = 'SELECT bBank4_name,bBank3 FROM tBank WHERE bBank4="" ORDER BY bBank3 ASC;';
 $rs                = $conn->CacheExecute($sql);
 
-while (!$rs->EOF) {
+while (! $rs->EOF) {
     $menuBank[$rs->fields['bBank3']] = $rs->fields['bBank4_name'] . '(' . $rs->fields['bBank3'] . ')';
     $rs->MoveNext();
 }
@@ -155,7 +159,7 @@ $cInvoiceClose = $rs->fields['cInvoiceClose'];
 $cSignCategory = $rs->fields['cSignCategory'];
 
 $checkSave = 1;
-if ($cInvoiceClose == 'Y' && !in_array($_SESSION['member_pDep'], [1, 9, 10])) {
+if ($cInvoiceClose == 'Y' && ! in_array($_SESSION['member_pDep'], [1, 9, 10])) {
     $checkSave = 0;
 }
 
@@ -167,10 +171,11 @@ function getArea($city)
 {
     global $conn;
 
+    $arr = [];
     $sql = 'SELECT zZip,zArea FROM tZipArea WHERE zCity="' . $city . '";';
     $rs  = $conn->CacheExecute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $arr[$rs->fields['zZip']] = $rs->fields['zArea'];
         $rs->moveNext();
     }
@@ -182,10 +187,11 @@ function getBankBranch($bank)
 {
     global $conn;
 
+    $arr = [];
     $sql = 'SELECT bBank4_name,bBank3,bBank4 FROM tBank WHERE bBank3="' . $bank . '" AND bBank4<>"" ORDER BY bBank3,bBank4 ASC;';
     $rs  = $conn->CacheExecute($sql);
 
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $arr[$rs->fields['bBank4']] = $rs->fields['bBank4_name'] . '(' . $rs->fields['bBank4'] . ')';
         $rs->MoveNext();
     }
@@ -197,11 +203,12 @@ function getBankAccount($cId, $iden, $id)
 {
     global $conn, $checklistCheckedCount; // 計算不帶入的勾選數
 
+    $arr = [];
     $sql = "SELECT * FROM tContractCustomerBank WHERE cCertifiedId ='" . $cId . "' AND cIdentity ='" . $iden . "' AND cOtherId ='" . $id . "' ORDER bY cId ASC";
     $rs  = $conn->Execute($sql);
 
     $i = 0;
-    while (!$rs->EOF) {
+    while (! $rs->EOF) {
         $arr[$i]                          = $rs->fields;
         $arr[$i]['bankBranch']            = getBankBranch($rs->fields['cBankMain']);
         $arr[$i]['index']                 = ($i + 1);
@@ -228,9 +235,9 @@ $smarty->assign('menuBank', $menuBank);
 $smarty->assign('menuBankBranch', $menuBankBranch);
 $smarty->assign('cIdentity', $cIdentity);
 $smarty->assign('meunCity', $menuCity);
-$smarty->assign('menuArea', array('0' => '區域'));
+$smarty->assign('menuArea', ['0' => '區域']);
 $smarty->assign('menuCountry', $menuCountry);
-$smarty->assign('menuResident', array(0 => '否', 1 => '是'));
+$smarty->assign('menuResident', [0 => '否', 1 => '是']);
 $smarty->assign('Resident', '0');
 $smarty->assign('list', $list);
 $smarty->assign('_iden', $_iden);

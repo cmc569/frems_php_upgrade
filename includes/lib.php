@@ -152,8 +152,11 @@ function countMonths($f, $t)
 
 function date_convert($date_str)
 {
-    $tmp = explode('-', $date_str);
-    $tmp[0] += 1911;
+    if (empty($date_str) || ! preg_match('/^\d{1,4}-\d{1,2}-\d{1,2}$/', $date_str)) {
+        return '';
+    }
+    $tmp      = explode('-', $date_str);
+    $tmp[0]   = (int) $tmp[0] + 1911;
     $date_str = join('-', $tmp);
     unset($tmp);
     return $date_str;

@@ -1,151 +1,157 @@
 <?php
-require_once dirname(__DIR__) . '/configs/config.class.php';
-require_once dirname(__DIR__) . '/class/advance.class.php';
-require_once dirname(__DIR__) . '/session_check.php';
-require_once dirname(__DIR__) . '/openadodb.php';
-require_once dirname(__DIR__) . '/includes/lib.php';
+    require_once dirname(__DIR__) . '/configs/config.class.php';
+    require_once dirname(__DIR__) . '/class/advance.class.php';
+    require_once dirname(__DIR__) . '/session_check.php';
+    require_once dirname(__DIR__) . '/openadodb.php';
+    require_once dirname(__DIR__) . '/includes/lib.php';
 
-$advance = new Advance();
+    $advance = new Advance();
 
-$_iden = trim(addslashes($_REQUEST['iden']));
-$save  = trim(addslashes($_REQUEST['save']));
-$del   = trim(addslashes($_POST['del']));
+    $_iden = isset($_REQUEST['iden']) && is_string($_REQUEST['iden']) ? trim(addslashes($_REQUEST['iden'])) : '';
+    $save  = isset($_REQUEST['save']) && is_string($_REQUEST['save']) ? trim(addslashes($_REQUEST['save'])) : '';
+    $del   = isset($_POST['del']) && is_string($_POST['del']) ? trim(addslashes($_POST['del'])) : '';
 
-$cCertifiedId = trim(addslashes($_REQUEST['cCertifyId']));
-$sign         = trim(addslashes($_REQUEST['SignCategory']));
+    $cCertifiedId = trim(addslashes($_REQUEST['cCertifyId']));
+    $sign         = trim(addslashes($_REQUEST['SignCategory']));
 
-if ($_iden == 'b') { // 5買方登記名義人6買方代理人7賣方代理人8賣方登記名義人
-    $_ide      = '買';
-    $cIdentity = 5;
-} else if ($_iden == 'o') {
-    $_ide      = '賣';
-    $cIdentity = 8;
-}
-
-if (!in_array($_iden, ['b', 'o'])) {
-    exit('資料錯誤!!');
-}
-
-//刪除資料
-if ($del == 'ok') {
-    $del_no = $_POST['del_no'];
-
-    if (!empty($del_no) && preg_match("/^\d+$/", $del_no)) {
-        $sql = 'DELETE FROM tContractOthers	WHERE cId = "' . $del_no . '";';
-        $conn->Execute($sql);
+    if ($_iden == 'b') { // 5買方登記名義人6買方代理人7賣方代理人8賣方登記名義人
+        $_ide      = '買';
+        $cIdentity = 5;
+    } else if ($_iden == 'o') {
+        $_ide      = '賣';
+        $cIdentity = 8;
     }
-}
-##
 
-//儲存資料
-if ($save == 'ok') {
-    //取得表格所有資料
-    $data = $_POST;
-    ##
+    if (! in_array($_iden, ['b', 'o'])) {
+        exit('資料錯誤!!');
+    }
 
-    //是否有新增對象及處裡
-    if ($data['new_cName'] && $data['new_cIdentifyId'] && $data['new_cIdentity']) {
-        $sqls = 'INSERT INTO
-                    tContractOthers
-                    (
-                        cCertifiedId,
-                        cTarget,
-                        cIdentity,
-                        cIdentifyId,
-                        cName,
-                        cBirthdayDay,
-                        cCountryCode,
-                        cTaxTreatyCode,
-                        cResidentLimit,
-                        cPaymentDate,
-                        cNHITax,
-                        cMobileNum,
-                        cRegistZip,
-                        cRegistAddr,
-                        cBaseZip,
-                        cBaseAddr,
-                        cBankMain,
-                        cBankBranch,
-                        cBankAccName,
-                        cBankAccNum,
-                        cInvoiceMoney,
-                        cInterestMoney
-                    )
-                VALUES
-                    (
-                        "' . $data['new_cCertifiedId'] . '",
-                        "' . $data['new_cTarget'] . '",
-                        "' . $data['new_cIdentity'] . '",
-                        "' . strtoupper($data['new_cIdentifyId']) . '",
-                        "' . $data['new_cName'] . '",
-                        "' . date_convert($data['new_cBirthdayDay']) . '",
-                        "' . $data['new_cCountryCode'] . '",
-                        "' . $data['new_cTaxTreatyCode'] . '",
-                        "' . $data['new_cResidentLimit'] . '",
-                        "' . $data['new_cPaymentDate'] . '",
-                        "' . $data['new_cNHITax'] . '",
-                        "' . $data['new_cMobileNum'] . '",
-                        "' . $data['new_cRegistZip'] . '",
-                        "' . $data['new_cRegistAddr'] . '",
-                        "' . $data['new_cBaseZip'] . '",
-                        "' . $data['new_cBaseAddr'] . '",
-                        "' . $data['new_cBankMain'] . '",
-                        "' . $data['new_cBankBranch'] . '",
-                        "' . $data['new_cBankAccName'] . '",
-                        "' . $data['new_cBankAccNum'] . '",
-                        "0",
-                        "0"
-                    );';
-        $conn->Execute($sqls);
+    //刪除資料
+    if ($del == 'ok') {
+        $del_no = $_POST['del_no'];
+
+        if (! empty($del_no) && preg_match("/^\d+$/", $del_no)) {
+            $sql = 'DELETE FROM tContractOthers	WHERE cId = "' . $del_no . '";';
+            $conn->Execute($sql);
+        }
     }
     ##
 
-    //儲存更新的資料
-    $max = count($data['cId']);
-    for ($i = 0; $i < $max; $i++) {
+    //儲存資料
+    if ($save == 'ok') {
+        //取得表格所有資料
+        $data = $_POST;
+        ##
 
-        $ck = 0;
-        if (count($data['cTarget'])) {
-            foreach ($data['cTarget'] as $k => $v) {
-                if ($v == $data['cId'][$i]) {
-                    $ck = '1';
+        //是否有新增對象及處裡
+        if (
+            isset($data['new_cName']) && $data['new_cName'] &&
+            isset($data['new_cIdentifyId']) && $data['new_cIdentifyId'] &&
+            isset($data['new_cIdentity']) && $data['new_cIdentity']
+        ) {
+            $sqls = 'INSERT INTO
+					tContractOthers
+					(
+						cCertifiedId,
+						cTarget,
+						cIdentity,
+						cIdentifyId,
+						cName,
+						cBirthdayDay,
+						cCountryCode,
+						cTaxTreatyCode,
+						cResidentLimit,
+						cPaymentDate,
+						cNHITax,
+						cMobileNum,
+						cRegistZip,
+						cRegistAddr,
+						cBaseZip,
+						cBaseAddr,
+						cBankMain,
+						cBankBranch,
+						cBankAccName,
+						cBankAccNum,
+						cInvoiceMoney,
+						cInterestMoney
+					)
+				VALUES
+					(
+						"' . (isset($data['new_cCertifiedId']) ? $data['new_cCertifiedId'] : '') . '",
+						"' . (isset($data['new_cTarget']) ? $data['new_cTarget'] : '') . '",
+						"' . (isset($data['new_cIdentity']) ? $data['new_cIdentity'] : '') . '",
+						"' . (isset($data['new_cIdentifyId']) ? strtoupper($data['new_cIdentifyId']) : '') . '",
+						"' . (isset($data['new_cName']) ? $data['new_cName'] : '') . '",
+						"' . (isset($data['new_cBirthdayDay']) ? date_convert($data['new_cBirthdayDay']) : '') . '",
+						"' . (isset($data['new_cCountryCode']) ? $data['new_cCountryCode'] : '') . '",
+						"' . (isset($data['new_cTaxTreatyCode']) ? $data['new_cTaxTreatyCode'] : '') . '",
+						"' . (isset($data['new_cResidentLimit']) ? $data['new_cResidentLimit'] : '') . '",
+						"' . (isset($data['new_cPaymentDate']) ? $data['new_cPaymentDate'] : '') . '",
+						"' . (isset($data['new_cNHITax']) ? $data['new_cNHITax'] : '') . '",
+						"' . (isset($data['new_cMobileNum']) ? $data['new_cMobileNum'] : '') . '",
+						"' . (isset($data['new_cRegistZip']) ? $data['new_cRegistZip'] : '') . '",
+						"' . (isset($data['new_cRegistAddr']) ? $data['new_cRegistAddr'] : '') . '",
+						"' . (isset($data['new_cBaseZip']) ? $data['new_cBaseZip'] : '') . '",
+						"' . (isset($data['new_cBaseAddr']) ? $data['new_cBaseAddr'] : '') . '",
+						"' . (isset($data['new_cBankMain']) ? $data['new_cBankMain'] : '') . '",
+						"' . (isset($data['new_cBankBranch']) ? $data['new_cBankBranch'] : '') . '",
+						"' . (isset($data['new_cBankAccName']) ? $data['new_cBankAccName'] : '') . '",
+						"' . (isset($data['new_cBankAccNum']) ? $data['new_cBankAccNum'] : '') . '",
+						"0",
+						"0"
+					);';
+            $conn->Execute($sqls);
+        }
+        ##
+
+        //儲存更新的資料
+        $max = (isset($data['cId']) && is_array($data['cId'])) ? count($data['cId']) : 0;
+        for ($i = 0; $i < $max; $i++) {
+            $ck = 0;
+            if (isset($data['cTarget']) && is_array($data['cTarget']) && count($data['cTarget'])) {
+                foreach ($data['cTarget'] as $k => $v) {
+                    if ($v == (isset($data['cId'][$i]) ? $data['cId'][$i] : '')) {
+                        $ck = '1';
+                    }
                 }
             }
-        }
 
-        $sqls = 'UPDATE
-				    tContractOthers
-                SET
-                    cName="' . $data['cName'][$i] . '",
-                    cTarget="' . $ck . '",
-                    cIdentifyId="' . strtoupper($data['cIdentifyId'][$i]) . '",
-                    cMobileNum="' . $data['cMobileNum'][$i] . '",
-                    cBirthdayDay="' . date_convert($data['cBirthdayDay'][$i]) . '",
-                    cCountryCode="' . $data['cCountryCode'][$i] . '",
-                    cTaxTreatyCode="' . $data['cTaxTreatyCode'][$i] . '",
-                    cPaymentDate="' . $data['cPaymentDate'][$i] . '",
-                    cIdentity="' . $data['cIdentity'][$i] . '",
-                    cRegistZip="' . $data['cRegistZip'][$i] . '",
-                    cRegistAddr="' . $data['cRegistAddr'][$i] . '",
-                    cBaseZip="' . $data['cBaseZip'][$i] . '",
-                    cBaseAddr="' . $data['cBaseAddr'][$i] . '",
-                    cBankMain="' . $data['cBankMain'][$i] . '",
-                    cBankBranch="' . $data['cBankBranch'][$i] . '",
-                    cBankAccNum="' . $data['cBankAccNum'][$i] . '",
-                    cBankAccName="' . $data['cBankAccName'][$i] . '",
-                    cResidentLimit="' . $resident . '",
-                    cNHITax="' . $NHI . '"
-                WHERE
-                    cId="' . $data['cId'][$i] . '"
-                    AND cCertifiedId="' . $data['cCertifiedId'][$i] . '";';
-        $conn->Execute($sqls);
+            $resident = '';
+            $NHI      = '';
+
+            $sqls = 'UPDATE
+					tContractOthers
+				SET
+					cName="' . (isset($data['cName'][$i]) ? $data['cName'][$i] : '') . '",
+					cTarget="' . $ck . '",
+					cIdentifyId="' . (isset($data['cIdentifyId'][$i]) ? strtoupper($data['cIdentifyId'][$i]) : '') . '",
+					cMobileNum="' . (isset($data['cMobileNum'][$i]) ? $data['cMobileNum'][$i] : '') . '",
+					cBirthdayDay="' . (isset($data['cBirthdayDay'][$i]) ? date_convert($data['cBirthdayDay'][$i]) : '') . '",
+					cCountryCode="' . (isset($data['cCountryCode'][$i]) ? $data['cCountryCode'][$i] : '') . '",
+					cTaxTreatyCode="' . (isset($data['cTaxTreatyCode'][$i]) ? $data['cTaxTreatyCode'][$i] : '') . '",
+					cPaymentDate="' . (isset($data['cPaymentDate'][$i]) ? $data['cPaymentDate'][$i] : '') . '",
+					cIdentity="' . (isset($data['cIdentity'][$i]) ? $data['cIdentity'][$i] : '') . '",
+					cRegistZip="' . (isset($data['cRegistZip'][$i]) ? $data['cRegistZip'][$i] : '') . '",
+					cRegistAddr="' . (isset($data['cRegistAddr'][$i]) ? $data['cRegistAddr'][$i] : '') . '",
+					cBaseZip="' . (isset($data['cBaseZip'][$i]) ? $data['cBaseZip'][$i] : '') . '",
+					cBaseAddr="' . (isset($data['cBaseAddr'][$i]) ? $data['cBaseAddr'][$i] : '') . '",
+					cBankMain="' . (isset($data['cBankMain'][$i]) ? $data['cBankMain'][$i] : '') . '",
+					cBankBranch="' . (isset($data['cBankBranch'][$i]) ? $data['cBankBranch'][$i] : '') . '",
+					cBankAccNum="' . (isset($data['cBankAccNum'][$i]) ? $data['cBankAccNum'][$i] : '') . '",
+					cBankAccName="' . (isset($data['cBankAccName'][$i]) ? $data['cBankAccName'][$i] : '') . '",
+					cResidentLimit="' . $resident . '",
+					cNHITax="' . $NHI . '"
+				WHERE
+					cId="' . (isset($data['cId'][$i]) ? $data['cId'][$i] : '') . '"
+					AND cCertifiedId="' . (isset($data['cCertifiedId'][$i]) ? $data['cCertifiedId'][$i] : '') . '";';
+            $conn->Execute($sqls);
+        }
+        ##
     }
     ##
-}
-##
 
-//顯示相關資料
-$sql = 'SELECT
+    //顯示相關資料
+    $sql = 'SELECT
             a.*,
             b.zCity as cRegistCity,
             b.zArea as cRegistArea,
@@ -163,8 +169,8 @@ $sql = 'SELECT
         ORDER BY
             a.cIdentity
         ASC;';
-$rs = $conn->Execute($sql);
-##
+    $rs = $conn->Execute($sql);
+    ##
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -392,7 +398,7 @@ function getCustomer(iden,id){
 		url: '/includes/escrow/getCustomer.php',
 		type: 'POST',
 		dataType: 'html',
-		data: {id: val,cId:"<?=$cCertifiedId?>",iden:iden},
+		data: {id: val,cId:"<?php echo $cCertifiedId ?>",iden:iden},
 	}).done(function(msg) {
 		var obj = JSON.parse(msg);
 		if (obj.msg == 'ok') {
@@ -456,35 +462,35 @@ fieldset {
 
 <body style="background-color:#F8ECE9;">
 <form id="myform" name="myform" method="POST">
-<input type="hidden" name="cCertifyId" value="<?=$cCertifiedId?>">
+<input type="hidden" name="cCertifyId" value="<?php echo $cCertifiedId ?>">
 
 <div style="height:10px;">
 </div>
-<input type="hidden" name="cInvoiceOther" value="<?=$cInvoiceOther?>">
+<input type="hidden" name="cInvoiceOther" value="<?php echo $cInvoiceOther ?>">
 <input type="hidden" name="save" value="">
 <table border="0" style="width:1000px;">
 <?php
-while (!$rs->EOF) {
-    switch ($rs->fields['cIdentity']) {
-        case '5':
-            $_ide = '買';
-            break;
-        case '8':
-            $_ide = '賣';
-            break;
-        default:
-            $_ide = '其他';
-            break;
-    }
+    while (! $rs->EOF) {
+        switch ($rs->fields['cIdentity']) {
+            case '5':
+                $_ide = '買';
+                break;
+            case '8':
+                $_ide = '賣';
+                break;
+            default:
+                $_ide = '其他';
+                break;
+        }
     ?>
 	<tr>
 		<td colspan="6" style="background-color:#E4BEB1;font-size:12pt;font-weight:bold;padding:5px;">
-			<?=$_ide?>方登記名義人資料　(<?=$cCertifiedId?>)
-			<input type="hidden" name="cId[]" value="<?=$rs->fields['cId']?>">
-			<input type="hidden" name="cCertifiedId[]" value="<?=$rs->fields['cCertifiedId']?>">
+			<?php echo $_ide ?>方登記名義人資料　(<?php echo $cCertifiedId ?>)
+			<input type="hidden" name="cId[]" value="<?php echo $rs->fields['cId'] ?>">
+			<input type="hidden" name="cCertifiedId[]" value="<?php echo $rs->fields['cCertifiedId'] ?>">
 			<?php
-if ($sign == 1) {?>
-					<span style="font-size:10pt;"><a href="#" onclick="del('<?=$rs->fields['cId']?>')">刪除</a></span>
+            if ($sign == 1) {?>
+					<span style="font-size:10pt;"><a href="#" onclick="del('<?php echo $rs->fields['cId'] ?>')">刪除</a></span>
 			<?php }?>
 
 		</td>
@@ -500,7 +506,7 @@ if ($sign == 1) {?>
 					<td><span class="sign-red">*</span>身分證號/統編︰</td>
 				</tr>
 				<tr>
-					<td><span class="sign-red">*</span><?=$_ide?>方登記名義人︰</td>
+					<td><span class="sign-red">*</span><?php echo $_ide ?>方登記名義人︰</td>
 				</tr>
 
 				<tr>
@@ -515,34 +521,34 @@ if ($sign == 1) {?>
 			<table border="0" style="width:300px;">
 				<tr>
 					<td>
-						<input type="hidden" name="cIdentity[]" value="<?=$rs->fields['cIdentity']?>">
+						<input type="hidden" name="cIdentity[]" value="<?php echo $rs->fields['cIdentity'] ?>">
 						 <?php $checked = '';if ($rs->fields['cTarget'] != 0) {$checked = 'checked';}?>
-						<?=$_ide?>方登記名義人資料 &nbsp;&nbsp; <!-- <input type="checkbox" name='cTarget[]' value="<?=$rs->fields['cId']?>" <?=$checked?>>同買方(甲方) -->
+<?php echo $_ide ?>方登記名義人資料 &nbsp;&nbsp; <!-- <input type="checkbox" name='cTarget[]' value="<?php echo $rs->fields['cId'] ?>"<?php echo $checked ?>>同買方(甲方) -->
 
 					</td>
 				</tr>
 				<tr>
 					<td>
-						<input type="text" maxlength="10" style="width:120px;" class="idc" id="_<?=$_iden . $rs->fields['cId']?>" name="cIdentifyId[]" value="<?=$rs->fields['cIdentifyId']?>" onkeyup="getCustomer('<?=$_iden?>','<?=$rs->fields['cId']?>')"/>
-						<span id="_<?=$_iden . $rs->fields['cId']?>_img" style="padding-left:5px;"></span>
+						<input type="text" maxlength="10" style="width:120px;" class="idc" id="_<?php echo $_iden . $rs->fields['cId'] ?>" name="cIdentifyId[]" value="<?php echo $rs->fields['cIdentifyId'] ?>" onkeyup="getCustomer('<?php echo $_iden ?>','<?php echo $rs->fields['cId'] ?>')"/>
+						<span id="_<?php echo $_iden . $rs->fields['cId'] ?>_img" style="padding-left:5px;"></span>
 					</td>
 				</tr>
 				<tr>
-					<td><input type="text" name="cName[]" style="width:120px;" id="name<?=$rs->fields['cId']?>" value="<?=$rs->fields['cName']?>" /></td>
+					<td><input type="text" name="cName[]" style="width:120px;" id="name<?php echo $rs->fields['cId'] ?>" value="<?php echo $rs->fields['cName'] ?>" /></td>
 				</tr>
 
 				<tr>
-					<td><input type="text" maxlength="10" style="width:120px;" id="mobile<?=$rs->fields['cId']?>" name="cMobileNum[]" value="<?=$rs->fields['cMobileNum']?>" /></td>
+					<td><input type="text" maxlength="10" style="width:120px;" id="mobile<?php echo $rs->fields['cId'] ?>" name="cMobileNum[]" value="<?php echo $rs->fields['cMobileNum'] ?>" /></td>
 				</tr>
 				<tr>
 				     <td>
 				     	<?php
-if ($rs->fields['cBirthdayDay'] == '0000-00-00') {?>
+                         if ($rs->fields['cBirthdayDay'] == '0000-00-00') {?>
 
-				     	<input type="text" maxlength="10" name="cBirthdayDay[]" style="width:120px;" value="" onclick="showdate(myform.BD<?=$rs->fields['cId']?>)" class="calender input-text-big" id="BD<?=$rs->fields['cId']?>" readonly/>
+				     	<input type="text" maxlength="10" name="cBirthdayDay[]" style="width:120px;" value="" onclick="showdate(myform.BD<?php echo $rs->fields['cId'] ?>)" class="calender input-text-big" id="BD<?php echo $rs->fields['cId'] ?>" readonly/>
 				    	<?php
-} else {?>
-						<input type="text" maxlength="10" name="cBirthdayDay[]" style="width:120px;" value="<?=$advance->ConvertDateToRoc($rs->fields['cBirthdayDay'], base::DATE_FORMAT_NUM_DATE)?>" onclick="showdate(myform.BD<?=$rs->fields['cId']?>)" class="calender input-text-big" id="BD<?=$rs->fields['cId']?>" readonly/>
+                        } else {?>
+						<input type="text" maxlength="10" name="cBirthdayDay[]" style="width:120px;" value="<?php echo $advance->ConvertDateToRoc($rs->fields['cBirthdayDay'], base::DATE_FORMAT_NUM_DATE) ?>" onclick="showdate(myform.BD<?php echo $rs->fields['cId'] ?>)" class="calender input-text-big" id="BD<?php echo $rs->fields['cId'] ?>" readonly/>
 				    <?php }?>
 
 				     </td>
@@ -564,43 +570,43 @@ if ($rs->fields['cBirthdayDay'] == '0000-00-00') {?>
 				<tr>
 					<td  style="width:60px;">&nbsp;</td>
 					<td>
-						<input type="hidden" id="cRegistZip-<?=$rs->fields['cId']?>" name="cRegistZip[]" value="<?=$rs->fields['cRegistZip']?>" style="background-color:#CCC;width:50px;"/>
-						<input type="text" maxlength="6" id="cRegistZip-<?=$rs->fields['cId']?>F" readonly="readonly" value="<?=substr($rs->fields['cRegistZip'], 0, 3)?>" style="background-color:#CCC;width:50px;"/>
-						<select id="cRegistCity-<?=$rs->fields['cId']?>" style="width:80px;" onchange="zip_area('cRegistCity-<?=$rs->fields['cId']?>','cRegistArea-<?=$rs->fields['cId']?>','cRegistZip-<?=$rs->fields['cId']?>')">
+						<input type="hidden" id="cRegistZip-<?php echo $rs->fields['cId'] ?>" name="cRegistZip[]" value="<?php echo $rs->fields['cRegistZip'] ?>" style="background-color:#CCC;width:50px;"/>
+						<input type="text" maxlength="6" id="cRegistZip-<?php echo $rs->fields['cId'] ?>F" readonly="readonly" value="<?php echo substr($rs->fields['cRegistZip'], 0, 3) ?>" style="background-color:#CCC;width:50px;"/>
+						<select id="cRegistCity-<?php echo $rs->fields['cId'] ?>" style="width:80px;" onchange="zip_area('cRegistCity-<?php echo $rs->fields['cId'] ?>','cRegistArea-<?php echo $rs->fields['cId'] ?>','cRegistZip-<?php echo $rs->fields['cId'] ?>')">
 							<option value="">縣市</option>
 							<?php
-$sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
-    $rs_zip = $conn->CacheExecute($sql);
+                                $sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
+                                    $rs_zip = $conn->CacheExecute($sql);
 
-    while (!$rs_zip->EOF) {
-        echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '"';
-        if ($rs->fields['cRegistCity'] == $rs_zip->fields['zCity']) {
-            echo ' selected="selected"';
-        }
-        echo '>' . $rs_zip->fields['zCity'] . '</option>' . "\n";
+                                    while (! $rs_zip->EOF) {
+                                        echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '"';
+                                        if ($rs->fields['cRegistCity'] == $rs_zip->fields['zCity']) {
+                                            echo ' selected="selected"';
+                                        }
+                                        echo '>' . $rs_zip->fields['zCity'] . '</option>' . "\n";
 
-        $rs_zip->MoveNext();
-    }
-    ?>
+                                        $rs_zip->MoveNext();
+                                    }
+                                ?>
 						</select>
 
-						<select id="cRegistArea-<?=$rs->fields['cId']?>" style="width:80px;" onchange="zip_change('cRegistArea-<?=$rs->fields['cId']?>','cRegistZip-<?=$rs->fields['cId']?>')">
+						<select id="cRegistArea-<?php echo $rs->fields['cId'] ?>" style="width:80px;" onchange="zip_change('cRegistArea-<?php echo $rs->fields['cId'] ?>','cRegistZip-<?php echo $rs->fields['cId'] ?>')">
 							<?php
-$sql    = 'SELECT zZip,zArea FROM tZipArea WHERE zCity="' . $rs->fields['cRegistCity'] . '";';
-    $rs_zip = $conn->CacheExecute($sql);
+                                $sql    = 'SELECT zZip,zArea FROM tZipArea WHERE zCity="' . $rs->fields['cRegistCity'] . '";';
+                                    $rs_zip = $conn->CacheExecute($sql);
 
-    while (!$rs_zip->EOF) {
-        echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zZip'] . '"';
-        if ($rs->fields['cRegistZip'] == $rs_zip->fields['zZip']) {
-            echo ' selected="selected"';
-        }
-        echo '>' . $rs_zip->fields['zArea'] . '</option>' . "\n";
+                                    while (! $rs_zip->EOF) {
+                                        echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zZip'] . '"';
+                                        if ($rs->fields['cRegistZip'] == $rs_zip->fields['zZip']) {
+                                            echo ' selected="selected"';
+                                        }
+                                        echo '>' . $rs_zip->fields['zArea'] . '</option>' . "\n";
 
-        $rs_zip->MoveNext();
-    }
-    ?>
+                                        $rs_zip->MoveNext();
+                                    }
+                                ?>
 						</select>
-						<input name="cRegistAddr[]" value="<?=$rs->fields['cRegistAddr']?>" style="width:500px;" id="cRegistAddr<?=$rs->fields['cId']?>"/>
+						<input name="cRegistAddr[]" value="<?php echo $rs->fields['cRegistAddr'] ?>" style="width:500px;" id="cRegistAddr<?php echo $rs->fields['cId'] ?>"/>
 					</td>
 				</tr>
 			</table>
@@ -619,51 +625,51 @@ $sql    = 'SELECT zZip,zArea FROM tZipArea WHERE zCity="' . $rs->fields['cRegist
 				<tr>
 					<td  style="width:60px;">
 						<?php
-$check = '';
-    if ($rs->fields['cBaseZip'] == $rs->fields['cRegistZip'] && $rs->fields['cBaseAddr'] == $rs->fields['cRegistAddr']) {
-        $check = 'checked';
-    }
-    ?>
-						<input type="checkbox" id="same<?=$rs->fields['cId']?>" onclick="addr(<?=$rs->fields['cId']?>);" <?=$check?>> 同上
+                            $check = '';
+                                if ($rs->fields['cBaseZip'] == $rs->fields['cRegistZip'] && $rs->fields['cBaseAddr'] == $rs->fields['cRegistAddr']) {
+                                    $check = 'checked';
+                                }
+                            ?>
+						<input type="checkbox" id="same<?php echo $rs->fields['cId'] ?>" onclick="addr(<?php echo $rs->fields['cId'] ?>);"<?php echo $check ?>> 同上
 					</td>
 					<td>
-			<input type="hidden" id="cBaseZip-<?=$rs->fields['cId']?>" name="cBaseZip[]" value="<?=$rs->fields['cBaseZip']?>" style="background-color:#CCC;width:50px;"/>
-			<input type="text" maxlength="6" id="cBaseZip-<?=$rs->fields['cId']?>F" readonly="readonly" value="<?=substr($rs->fields['cBaseZip'], 0, 3)?>" style="background-color:#CCC;width:50px;"/>
-			<select id="cBaseCity-<?=$rs->fields['cId']?>" style="width:80px;" onchange="zip_area('cBaseCity-<?=$rs->fields['cId']?>','cBaseArea-<?=$rs->fields['cId']?>','cBaseZip-<?=$rs->fields['cId']?>')">
+			<input type="hidden" id="cBaseZip-<?php echo $rs->fields['cId'] ?>" name="cBaseZip[]" value="<?php echo $rs->fields['cBaseZip'] ?>" style="background-color:#CCC;width:50px;"/>
+			<input type="text" maxlength="6" id="cBaseZip-<?php echo $rs->fields['cId'] ?>F" readonly="readonly" value="<?php echo substr($rs->fields['cBaseZip'], 0, 3) ?>" style="background-color:#CCC;width:50px;"/>
+			<select id="cBaseCity-<?php echo $rs->fields['cId'] ?>" style="width:80px;" onchange="zip_area('cBaseCity-<?php echo $rs->fields['cId'] ?>','cBaseArea-<?php echo $rs->fields['cId'] ?>','cBaseZip-<?php echo $rs->fields['cId'] ?>')">
 				<option value="">縣市</option>
 				<?php
-$sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
-    $rs_zip = $conn->CacheExecute($sql);
+                    $sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
+                        $rs_zip = $conn->CacheExecute($sql);
 
-    while (!$rs_zip->EOF) {
-        echo "\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '"';
-        if ($rs->fields['cBaseCity'] == $rs_zip->fields['zCity']) {
-            echo ' selected="selected"';
-        }
-        echo '>' . $rs_zip->fields['zCity'] . '</option>' . "\n";
+                        while (! $rs_zip->EOF) {
+                            echo "\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '"';
+                            if ($rs->fields['cBaseCity'] == $rs_zip->fields['zCity']) {
+                                echo ' selected="selected"';
+                            }
+                            echo '>' . $rs_zip->fields['zCity'] . '</option>' . "\n";
 
-        $rs_zip->MoveNext();
-    }
-    ?>
+                            $rs_zip->MoveNext();
+                        }
+                    ?>
 			</select>
-			<select id="cBaseArea-<?=$rs->fields['cId']?>" style="width:80px;" onchange="zip_change('cBaseArea-<?=$rs->fields['cId']?>','cBaseZip-<?=$rs->fields['cId']?>')">
+			<select id="cBaseArea-<?php echo $rs->fields['cId'] ?>" style="width:80px;" onchange="zip_change('cBaseArea-<?php echo $rs->fields['cId'] ?>','cBaseZip-<?php echo $rs->fields['cId'] ?>')">
 				<?php
-$sql    = 'SELECT zZip,zArea FROM tZipArea WHERE zCity="' . $rs->fields['cBaseCity'] . '";';
-    $rs_zip = $conn->CacheExecute($sql);
+                    $sql    = 'SELECT zZip,zArea FROM tZipArea WHERE zCity="' . $rs->fields['cBaseCity'] . '";';
+                        $rs_zip = $conn->CacheExecute($sql);
 
-    while (!$rs_zip->EOF) {
-        echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zZip'] . '"';
-        if ($rs->fields['cBaseZip'] == $rs_zip->fields['zZip']) {
-            echo ' selected="selected"';
-        }
-        echo '>' . $rs_zip->fields['zArea'] . '</option>' . "\n";
+                        while (! $rs_zip->EOF) {
+                            echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zZip'] . '"';
+                            if ($rs->fields['cBaseZip'] == $rs_zip->fields['zZip']) {
+                                echo ' selected="selected"';
+                            }
+                            echo '>' . $rs_zip->fields['zArea'] . '</option>' . "\n";
 
-        $rs_zip->MoveNext();
-    }
-    ?>
+                            $rs_zip->MoveNext();
+                        }
+                    ?>
 			</select>
 
-			<input name="cBaseAddr[]" value="<?=$rs->fields['cBaseAddr']?>" style="width:500px;" id="cBaseAddr<?=$rs->fields['cId']?>"/>
+			<input name="cBaseAddr[]" value="<?php echo $rs->fields['cBaseAddr'] ?>" style="width:500px;" id="cBaseAddr<?php echo $rs->fields['cId'] ?>"/>
 					</td>
 				</tr>
 			</table>
@@ -678,12 +684,12 @@ $sql    = 'SELECT zZip,zArea FROM tZipArea WHERE zCity="' . $rs->fields['cBaseCi
             </table>
         </th>
         <td colspan="3">
-            <div><input type="button" style="padding: 5px;" onclick="transferArea('<?=$cCertifiedId?>', 5, '<?=$rs->fields['cId']?>')" value="設定"></div>
+            <div><input type="button" style="padding: 5px;" onclick="transferArea('<?php echo $cCertifiedId ?>', 5, '<?php echo $rs->fields['cId'] ?>')" value="設定"></div>
         </td>
     </tr>
 <?php
-$rs->MoveNext();
-}
+    $rs->MoveNext();
+    }
 ?>
 	<tr>
 		<td id="addnew_field" colspan="6" style="text-align:right;"><button id="addnew">增加對象</button></a></td>
@@ -692,8 +698,8 @@ $rs->MoveNext();
 <table border="0" id="new_record" style="width:1000px;">
 	<tr>
 		<td colspan="6" style="background-color:#E4BEB1;font-size:12pt;font-weight:bold;padding:5px;">
-			新增資料　(<?=$cCertifiedId?>)　<<新增紀錄>>
-			<input type="hidden" name="new_cCertifiedId" value="<?=$cCertifiedId?>">
+			新增資料　(<?php echo $cCertifiedId ?>)　<<新增紀錄>>
+			<input type="hidden" name="new_cCertifiedId" value="<?php echo $cCertifiedId ?>">
 		</td>
 	</tr>
 	<tr>
@@ -720,8 +726,8 @@ $rs->MoveNext();
 			<table border="0" style="width:300px;">
 				<tr>
 					<td>
-						<input type="hidden" name="new_cIdentity" value="<?=$cIdentity?>">
-							<?=$_ide?>方登記名義人資料 &nbsp;&nbsp;<!-- <input type="checkbox" name='new_cTarget' value="1">同買方(甲方) -->
+						<input type="hidden" name="new_cIdentity" value="<?php echo $cIdentity ?>">
+							<?php echo $_ide ?>方登記名義人資料 &nbsp;&nbsp;<!-- <input type="checkbox" name='new_cTarget' value="1">同買方(甲方) -->
 					</td>
 				</tr>
 				<tr>
@@ -762,15 +768,15 @@ $rs->MoveNext();
 						<select id="new_cRegistCity" name="new_cRegistCity" style="width:80px;" onchange="zip_area('new_cRegistCity','new_cRegistArea')">
 							<option value="">縣市</option>
 							<?php
-$sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
-$rs_zip = $conn->CacheExecute($sql);
+                                $sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
+                                $rs_zip = $conn->CacheExecute($sql);
 
-while (!$rs_zip->EOF) {
-    echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '">' . $rs_zip->fields['zCity'] . '</option>' . "\n";
+                                while (! $rs_zip->EOF) {
+                                    echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '">' . $rs_zip->fields['zCity'] . '</option>' . "\n";
 
-    $rs_zip->MoveNext();
-}
-?>
+                                    $rs_zip->MoveNext();
+                                }
+                            ?>
 						</select>
 
 						<select id="new_cRegistArea" name="new_cRegistArea" style="width:80px;" onchange="zip_change('new_cRegistArea','new_cRegistZip')">
@@ -801,15 +807,15 @@ while (!$rs_zip->EOF) {
 			<select id="new_cBaseCity" style="width:80px;" onchange="zip_area('new_cBaseCity','new_cBaseArea')">
 				<option value="">縣市</option>
 				<?php
-$sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
-$rs_zip = $conn->CacheExecute($sql);
+                    $sql    = 'SELECT DISTINCT zCity FROM tZipArea;';
+                    $rs_zip = $conn->CacheExecute($sql);
 
-while (!$rs_zip->EOF) {
-    echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '">' . $rs_zip->fields['zCity'] . '</option>' . "\n";
+                    while (! $rs_zip->EOF) {
+                        echo "\t\t\t\t\t\t\t" . '<option value="' . $rs_zip->fields['zCity'] . '">' . $rs_zip->fields['zCity'] . '</option>' . "\n";
 
-    $rs_zip->MoveNext();
-}
-?>
+                        $rs_zip->MoveNext();
+                    }
+                ?>
 			</select>
 			<select id="new_cBaseArea" style="width:80px;" onchange="zip_change('new_cBaseArea','new_cBaseZip')">
 				<option value="">區域</option>
@@ -844,11 +850,11 @@ if ($sign == 1) {?>
 </div>
 <div id="dialog_save">
 <?php
-if ($save == "ok") {
-    echo '資料已更新!!';
-} else if ($del == 'ok') {
-    echo '資料已刪除!!';
-}
+    if ($save == "ok") {
+        echo '資料已更新!!';
+    } else if ($del == 'ok') {
+        echo '資料已刪除!!';
+    }
 ?>
 </div>
 <div id="dialog"></div>
