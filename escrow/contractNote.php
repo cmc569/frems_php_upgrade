@@ -1,61 +1,61 @@
 <?php
-include_once '../configs/config.class.php';
-include_once '../session_check.php' ;
-include_once '../openadodb.php' ;
+    include_once '../configs/config.class.php';
+    include_once '../session_check.php';
+    include_once '../openadodb.php';
 
+    $_REQUEST = escapeStr($_REQUEST);
 
-$_REQUEST = escapeStr($_REQUEST) ;
+    $cCertifiedId = $_REQUEST['cCertifyId'];
+    $cat          = $_REQUEST['cat'];
+    $save         = isset($_REQUEST['save']) ? $_REQUEST['save'] : '';
+    $del          = isset($_POST['del']) ? $_POST['del'] : '';
 
-$cCertifiedId = $_REQUEST['cCertifyId'] ;
-$cat = $_REQUEST['cat'] ;
-$save = $_REQUEST['save'] ;
-$del = $_POST['del'] ;
-
-
-if (!empty($_POST['Note'])) {
-	$sql = "INSERT INTO tContractNote
+    if (! empty($_POST['Note'])) {
+        $sql = "INSERT INTO tContractNote
 				(
 					cCertifiedId,
 					cCategory,
 					cNote
 				) VALUES (
-					'".$cCertifiedId."',
-					'".$cat."',
-					'".$_POST['Note']."'
+					'" . $cCertifiedId . "',
+					'" . $cat . "',
+					'" . $_POST['Note'] . "'
 				)";
-	$conn->Execute($sql);
-}
+        $conn->Execute($sql);
+    }
 
-if (!empty($_POST['id'])) {
-	$sql = "UPDATE tContractNote SET cDel = 1 WHERE cId ='".$_POST['id']."'";
-	$conn->Execute($sql);
-}
+    if (! empty($_POST['id'])) {
+        $sql = "UPDATE tContractNote SET cDel = 1 WHERE cId ='" . $_POST['id'] . "'";
+        $conn->Execute($sql);
+    }
 
-switch ($cat) {
-	case '1':
-		$title = '7日內未入帳說明';
-		break;
-	case '2':
-		$title = '2個月未結案之案件';
-		break;
-	case '3':
-		$title = '超過點交日尚未結案';
-		break;
-	default:
-		# code...
-		break;
-}
+    switch ($cat) {
+        case '1':
+            $title = '7日內未入帳說明';
+            break;
+        case '2':
+            $title = '2個月未結案之案件';
+            break;
+        case '3':
+            $title = '超過點交日尚未結案';
+            break;
+        default:
+            # code...
+            break;
+    }
 
-$sql = "SELECT * FROM tContractNote WHERE cCertifiedId = '".$cCertifiedId."' AND cCategory ='".$cat."' AND cDel = 0 ORDER BY cModify_Time ASC";
+    $sql = "SELECT * FROM tContractNote WHERE cCertifiedId = '" . $cCertifiedId . "' AND cCategory ='" . $cat . "' AND cDel = 0 ORDER BY cModify_Time ASC";
 
-$rs = $conn->Execute($sql);
+    $rs = $conn->Execute($sql);
 
-while (!$rs->EOF) {
-	$list[] = $rs->fields;
+    // 初始化 $list 為空陣列，避免未定義及 count() 的致命錯誤
+    $list = [];
 
-	$rs->MoveNext();
-}
-##
+    while (! $rs->EOF) {
+        $list[] = $rs->fields;
+        $rs->MoveNext();
+    }
+    ##
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -72,23 +72,23 @@ while (!$rs->EOF) {
 <script type="text/javascript">
 $(document).ready(function() {
 
-	
+
 	// //初始設定
 	// $('#new_record').hide() ;
-	
+
 	//新增一筆紀錄
 	$('#addnew').click(function() {
 		$('#new_record').show() ;
 		$('#addnew_field').html('&nbsp;') ;
 	}) ;
-	
+
 	//儲存資料
 	$('#savedata').click(function() {
 		$('[name="save"]').val('ok') ;
 		$('[name="myform"]').submit() ;
 	}) ;
-	
-	
+
+
 	//變更按鈕樣式
 	$('#addnew').button({
 		icons:{
@@ -96,13 +96,13 @@ $(document).ready(function() {
 		}
 	}) ;
 
-	
+
 	$('#closewin').button({
 		icons:{
 			primary: "ui-icon-close"
 		}
 	}) ;
-	
+
 }) ;
 
 function add(){
@@ -127,7 +127,7 @@ function del(id){
 	border:1px solid #999;
 }
 .tb td{
-	
+
 	padding:5px;
 	border:1px solid #000;
 }
@@ -138,10 +138,10 @@ function del(id){
 
 <form action="" method="POST" name="formAdd">
 <table border="0" style="width:80%;">
-	
+
 	<tr>
 		<td colspan="2" style="background-color:#E4BEB1;font-size:12pt;font-weight:bold;padding:5px;">
-			<?=$title?>
+			<?php echo $title ?>
 		</td>
 	</tr>
 	<tr>
@@ -152,8 +152,8 @@ function del(id){
 			<input type="button" value="新增" onclick="add()" />
 		</td>
 	</tr>
-	
-	
+
+
 </table>
 </form>
 <br />
@@ -164,13 +164,13 @@ function del(id){
 		<th  width="20%">刪除</th>
 	</tr>
 	<?php
-	for ($i=0; $i < count($list); $i++) {  ?>
+    for ($i = 0; $i < count($list); $i++) {?>
 		<tr>
-			<td><?=nl2br($list[$i]['cNote'])?></td>
-			<td><?=$list[$i]['cModify_Time']?></td>
-			<td align="center"><input type="button" value="刪除" onclick="del(<?=$list[$i]['cId']?>)" /></td>
+			<td><?php echo nl2br($list[$i]['cNote']) ?></td>
+			<td><?php echo $list[$i]['cModify_Time'] ?></td>
+			<td align="center"><input type="button" value="刪除" onclick="del(<?php echo $list[$i]['cId'] ?>)" /></td>
 		</tr>
-	<?php } ?>
+	<?php }?>
 </table>
 <br>
 <form action="" method="POST" name="formDel">
