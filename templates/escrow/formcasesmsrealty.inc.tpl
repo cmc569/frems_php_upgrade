@@ -248,7 +248,7 @@
                                                 <input type="checkbox" name="add[]" value="1">
                                             </td>
                                             <td>
-                                               <{html_options name="title[]" options=$option_title selected=$book.id }>
+                                               <{html_options name="title[]" options=$option_title}>
                                             </td>
                                             <td>
                                                 <input type="text" name="smsname[]" size="8">
