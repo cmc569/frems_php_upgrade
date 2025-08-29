@@ -1,5 +1,10 @@
 <?php
 
+// 初始化變數，避免未定義警告
+$cCertifiedId = '';
+$buyerowner = '';
+$check = isset($_POST['check']) ? $_POST['check'] : '';
+
 //從後台來的
 if ($cCertifiedId == '') { 
   $cCertifiedId = $_POST['cCertifiedId'];
@@ -11,7 +16,7 @@ if ($buyerowner == '') { //1買2賣
   $buyerowner = $_POST['cat'];
 }
 
-$check = $_POST['check'];
+// $check 已在上方初始化
 
 if ($cCertifiedId == '' && $buyerowner=='') {
   header("location:http://www.first1.com.tw/");
@@ -268,12 +273,13 @@ SELECT
 FROM
   tBrand
 WHERE
-  bId=?
-' ;
+  bId=?'
+ ;
 $rs = $pdo->prepare($sql) ;
 $rs->bindValue(1,$data_realstate['cBrand'],PDO::PARAM_STR) ;
 $rs->execute() ;
 $data_realstate_re = $rs->fetch();
+
 
 // $rs = $conn->Execute($sql);
 // $data_realstate_re = $rs->fields;
