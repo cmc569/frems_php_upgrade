@@ -89,6 +89,9 @@ for ($i = 0; $i < $max; $i++) {
         $data = null;unset($data);
     }
 
+    if (! isset($data_land[$i]['land_price']['land_item']) || ! is_array($data_land[$i]['land_price']['land_item'])) {
+        $data_land[$i]['land_price']['land_item'] = [];
+    }
     if (count($data_land[$i]['land_price']['land_item']) < $land_price_max) {
         for ($j = count($data_land[$i]['land_price']['land_item']); $j < $land_price_max; $j++) {
             $data_land[$i]['land_price']['land_item'][]  = '';

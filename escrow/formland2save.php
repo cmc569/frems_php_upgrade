@@ -31,8 +31,8 @@ foreach ($data['land_item'] as $k => $v) {
         $data['land_price_power2'][$k]    = null;unset($data['land_price_power2'][$k]);
 
     } else {
-        if (!empty($data['land_price_movedate'][$k]) || !empty($data['land_price_landprice'][$k])
-            || !empty($data['land_price_power1'][$k]) || !empty($data['land_price_power2'][$k])) {
+        if (! empty($data['land_price_movedate'][$k]) || ! empty($data['land_price_landprice'][$k])
+            || ! empty($data['land_price_power1'][$k]) || ! empty($data['land_price_power2'][$k])) {
 
             $data['land_price_movedate'][$k]  = json_decode($data['land_price_movedate'][$k], true);
             $data['land_price_landprice'][$k] = json_decode($data['land_price_landprice'][$k], true);
@@ -68,15 +68,15 @@ foreach ($data['land_item'] as $k => $v) {
                 "' . $data['land_power1'][$k] . '", "' . $data['land_power2'][$k] . '"
             );';
     if ($conn->Execute($sql)) {
-        if (!empty($data['land_price_movedate'][$k])) {
+        if (! empty($data['land_price_movedate'][$k])) {
             $item_index = 0;
             foreach ($data['land_price_movedate'][$k] as $ka => $va) {
-                if (!empty($data['land_price_movedate'][$k][$ka])
-                    || !empty($data['land_price_landprice'][$k][$ka])
-                    || !empty($data['land_price_power1'][$k][$ka])
-                    || !empty($data['land_price_power2'][$k][$ka])) {
+                if (! empty($data['land_price_movedate'][$k][$ka])
+                    || ! empty($data['land_price_landprice'][$k][$ka])
+                    || ! empty($data['land_price_power1'][$k][$ka])
+                    || ! empty($data['land_price_power2'][$k][$ka])) {
 
-                    if (!empty($data['land_price_movedate'][$k][$ka])) {
+                    if (! empty($data['land_price_movedate'][$k][$ka])) {
                         $arr                                  = explode('-', $data['land_price_movedate'][$k][$ka]);
                         $data['land_price_movedate'][$k][$ka] = ($arr[0] + 1911) . '-' . str_pad($arr[1], 2, '0', STR_PAD_LEFT) . '-00';
                         $arr                                  = null;unset($arr);
@@ -87,6 +87,9 @@ foreach ($data['land_item'] as $k => $v) {
                 }
             }
 
+            if (! is_array($tmp)) {
+                $tmp = [];
+            }
             $sql = 'INSERT INTO
                         tContractLandPrice
                     (
