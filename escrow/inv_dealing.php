@@ -73,24 +73,24 @@ if ($save == 'ok') {
     if ($_POST['cInvoiceRealestate'] != '0') {$cIR = 1;}
 
     $cIS = 0; //分配給地政士
-    if ($_POST['cInvoiceScrivener'] != '0') {$cIS = 1;}
+    if (isset($_POST['cInvoiceScrivener']) && $_POST['cInvoiceScrivener'] != '0') {$cIS = 1;}
 
     $cI = 0; //分配給其他(創世)
-    if ($_POST['cInvoiceOther'] != '0') {$cI = 1;}
+    if (isset($_POST['cInvoiceOther']) && $_POST['cInvoiceOther'] != '0') {$cI = 1;}
 
     $sql = 'UPDATE
                 tContractInvoice
             SET
                 cSplitOwner="' . $cIO . '",
-                cInvoiceOwner="' . $_POST['cInvoiceOwner'] . '",
+                cInvoiceOwner="' . (isset($_POST['cInvoiceOwner']) ? $_POST['cInvoiceOwner'] : '0') . '",
                 cSplitBuyer="' . $cIB . '",
-                cInvoiceBuyer="' . $_POST['cInvoiceBuyer'] . '",
+                cInvoiceBuyer="' . (isset($_POST['cInvoiceBuyer']) ? $_POST['cInvoiceBuyer'] : '0') . '",
                 cSplitRealestate="' . $cIR . '",
-                cInvoiceRealestate="' . $_POST['cInvoiceRealestate'] . '",
+                cInvoiceRealestate="' . (isset($_POST['cInvoiceRealestate']) ? $_POST['cInvoiceRealestate'] : '0') . '",
                 cSplitScrivener="' . $cIS . '",
-                cInvoiceScrivener="' . $_POST['cInvoiceScrivener'] . '",
+                cInvoiceScrivener="' . (isset($_POST['cInvoiceScrivener']) ? $_POST['cInvoiceScrivener'] : '0') . '",
                 cSplitOther="' . $cI . '",
-                cInvoiceOther="' . $_POST['cInvoiceOther'] . '"
+                cInvoiceOther="' . (isset($_POST['cInvoiceOther']) ? $_POST['cInvoiceOther'] : '0') . '"
             WHERE
                 cCertifiedId="' . $cCertifiedId . '" ;';
     $conn->Execute($sql);
@@ -98,17 +98,30 @@ if ($save == 'ok') {
     ##
 
     //更新賣方資料
-    for ($i = 0; $i < count($_POST['owner_cId']); $i++) {
-        if ($_POST['owner_donate'][$_POST['owner_cId'][$i]] == '') {
-            $_POST['owner_donate'][$_POST['owner_cId'][$i]] = 0;
-        }
+    if (isset($_POST['owner_cId']) && is_array($_POST['owner_cId'])) {
+        for ($i = 0; $i < count($_POST['owner_cId']); $i++) {
+            if (! isset($_POST['owner_donate']) || ! is_array($_POST['owner_donate']) ||
+                ! isset($_POST['owner_donate'][$_POST['owner_cId'][$i]]) ||
+                $_POST['owner_donate'][$_POST['owner_cId'][$i]] == '') {
+                if (! isset($_POST['owner_donate'])) {
+                    $_POST['owner_donate'] = [];
+                }
 
-        if ($_POST['owner_print'][$_POST['owner_cId'][$i]] == '') {
-            $_POST['owner_print'][$_POST['owner_cId'][$i]] = 'N';
-        }
+                $_POST['owner_donate'][$_POST['owner_cId'][$i]] = 0;
+            }
 
-        if ($_POST['owner_first'][$i] == '1') { //主賣方
-            $sql = 'UPDATE
+            if (! isset($_POST['owner_print']) || ! is_array($_POST['owner_print']) ||
+                ! isset($_POST['owner_print'][$_POST['owner_cId'][$i]]) ||
+                $_POST['owner_print'][$_POST['owner_cId'][$i]] == '') {
+                if (! isset($_POST['owner_print'])) {
+                    $_POST['owner_print'] = [];
+                }
+
+                $_POST['owner_print'][$_POST['owner_cId'][$i]] = 'N';
+            }
+
+            if ($_POST['owner_first'][$i] == '1') { //主賣方
+                $sql = 'UPDATE
                         tContractOwner
                     SET
                         cInvoiceMoney="' . $_POST['owner_inv'][$i] . '",
@@ -117,8 +130,8 @@ if ($save == 'ok') {
                     WHERE
                         cCertifiedId="' . $cCertifiedId . '"
                         AND cId="' . $_POST['owner_cId'][$i] . '";';
-        } else { //其他賣方
-            $sql = 'UPDATE
+            } else { //其他賣方
+                $sql = 'UPDATE
                         tContractOthers
                     SET
                         cInvoiceMoney="' . $_POST['owner_inv'][$i] . '",
@@ -127,24 +140,38 @@ if ($save == 'ok') {
                     WHERE
                         cCertifiedId="' . $cCertifiedId . '"
                         AND cId="' . $_POST['owner_cId'][$i] . '";';
-        }
+            }
 
-        $conn->Execute($sql);
+            $conn->Execute($sql);
+        }
     }
     ##
 
     //更新買方資料
-    for ($i = 0; $i < count($_POST['buyer_cId']); $i++) {
-        if ($_POST['buyer_donate'][$_POST['buyer_cId'][$i]] == '') {
-            $_POST['buyer_donate'][$_POST['buyer_cId'][$i]] = 0;
-        }
+    if (isset($_POST['buyer_cId']) && is_array($_POST['buyer_cId'])) {
+        for ($i = 0; $i < count($_POST['buyer_cId']); $i++) {
+            if (! isset($_POST['buyer_donate']) || ! is_array($_POST['buyer_donate']) ||
+                ! isset($_POST['buyer_donate'][$_POST['buyer_cId'][$i]]) ||
+                $_POST['buyer_donate'][$_POST['buyer_cId'][$i]] == '') {
+                if (! isset($_POST['buyer_donate'])) {
+                    $_POST['buyer_donate'] = [];
+                }
 
-        if ($_POST['buyer_print'][$_POST['buyer_cId'][$i]] == '') {
-            $_POST['buyer_print'][$_POST['buyer_cId'][$i]] = 'N';
-        }
+                $_POST['buyer_donate'][$_POST['buyer_cId'][$i]] = 0;
+            }
 
-        if ($_POST['buyer_first'][$i] == '1') { //主買方
-            $sql = 'UPDATE
+            if (! isset($_POST['buyer_print']) || ! is_array($_POST['buyer_print']) ||
+                ! isset($_POST['buyer_print'][$_POST['buyer_cId'][$i]]) ||
+                $_POST['buyer_print'][$_POST['buyer_cId'][$i]] == '') {
+                if (! isset($_POST['buyer_print'])) {
+                    $_POST['buyer_print'] = [];
+                }
+
+                $_POST['buyer_print'][$_POST['buyer_cId'][$i]] = 'N';
+            }
+
+            if ($_POST['buyer_first'][$i] == '1') { //主買方
+                $sql = 'UPDATE
                         tContractBuyer
                     SET
                         cInvoiceMoney="' . $_POST['buyer_inv'][$i] . '",
@@ -153,8 +180,8 @@ if ($save == 'ok') {
                     WHERE
                         cCertifiedId="' . $cCertifiedId . '"
                         AND cId="' . $_POST['buyer_cId'][$i] . '";';
-        } else { //其他買方
-            $sql = 'UPDATE
+            } else { //其他買方
+                $sql = 'UPDATE
                         tContractOthers
                     SET
                         cInvoiceMoney="' . $_POST['buyer_inv'][$i] . '",
@@ -163,24 +190,39 @@ if ($save == 'ok') {
                     WHERE
                         cCertifiedId="' . $cCertifiedId . '"
                         AND cId="' . $_POST['buyer_cId'][$i] . '";';
-        }
+            }
 
-        $conn->Execute($sql);
+            $conn->Execute($sql);
+        }
     }
     ##
 
     //更新仲介資料
-    for ($i = 0; $i < count($_POST['realty_bId']); $i++) {
-        if ($_POST['branch_donate'][$_POST['realty_bId'][$i]] == '') {
-            $_POST['branch_donate'][$_POST['realty_bId'][$i]] = 0;
-        }
+    if (isset($_POST['realty_bId']) && is_array($_POST['realty_bId'])) {
+        for ($i = 0; $i < count($_POST['realty_bId']); $i++) {
+            if (! isset($_POST['branch_donate']) || ! is_array($_POST['branch_donate']) ||
+                ! isset($_POST['branch_donate'][$_POST['realty_bId'][$i]]) ||
+                $_POST['branch_donate'][$_POST['realty_bId'][$i]] == '') {
+                if (! isset($_POST['branch_donate'])) {
+                    $_POST['branch_donate'] = [];
+                }
 
-        if ($_POST['branch_print'][$_POST['realty_bId'][$i]] == 'N') {
-            $_POST['branch_print'][$_POST['realty_bId'][$i]] = 'N';
-        }
+                $_POST['branch_donate'][$_POST['realty_bId'][$i]] = 0;
+            }
 
-        if ($_POST['realty_first'][$i] == '1') { //第一組
-            $sql = 'UPDATE
+            if (! isset($_POST['branch_print']) || ! is_array($_POST['branch_print']) ||
+                ! isset($_POST['branch_print'][$_POST['realty_bId'][$i]])) {
+                if (! isset($_POST['branch_print'])) {
+                    $_POST['branch_print'] = [];
+                }
+
+                $_POST['branch_print'][$_POST['realty_bId'][$i]] = 'N';
+            } elseif ($_POST['branch_print'][$_POST['realty_bId'][$i]] == 'N') {
+                $_POST['branch_print'][$_POST['realty_bId'][$i]] = 'N';
+            }
+
+            if ($_POST['realty_first'][$i] == '1') { //第一組
+                $sql = 'UPDATE
                         tContractRealestate
                     SET
                         cInvoiceMoney="' . $_POST['realty_inv'][$i] . '",
@@ -188,8 +230,8 @@ if ($save == 'ok') {
                         cInvoicePrint ="' . $_POST['branch_print'][$_POST['realty_bId'][$i]] . '"
                     WHERE
                         cCertifyId="' . $cCertifiedId . '";';
-        } else if ($_POST['realty_first'][$i] == '2') { //第二組
-            $sql = 'UPDATE
+            } else if ($_POST['realty_first'][$i] == '2') { //第二組
+                $sql = 'UPDATE
                         tContractRealestate
                     SET
                         cInvoiceMoney1="' . $_POST['realty_inv'][$i] . '",
@@ -197,8 +239,8 @@ if ($save == 'ok') {
                         cInvoicePrint1 ="' . $_POST['branch_print'][$_POST['realty_bId'][$i]] . '"
                     WHERE
                         cCertifyId="' . $cCertifiedId . '";';
-        } else if ($_POST['realty_first'][$i] == '3') { //第三組
-            $sql = 'UPDATE
+            } else if ($_POST['realty_first'][$i] == '3') { //第三組
+                $sql = 'UPDATE
                         tContractRealestate
                     SET
                         cInvoiceMoney2="' . $_POST['realty_inv'][$i] . '",
@@ -206,8 +248,8 @@ if ($save == 'ok') {
                         cInvoicePrint2 ="' . $_POST['branch_print'][$_POST['realty_bId'][$i]] . '"
                     WHERE
                         cCertifyId="' . $cCertifiedId . '";';
-        } else { //第四組
-            $sql = 'UPDATE
+            } else { //第四組
+                $sql = 'UPDATE
                         tContractRealestate
                     SET
                         cInvoiceMoney3="' . $_POST['realty_inv'][$i] . '",
@@ -215,22 +257,24 @@ if ($save == 'ok') {
                         cInvoicePrint3 ="' . $_POST['branch_print'][$_POST['realty_bId'][$i]] . '"
                     WHERE
                         cCertifyId="' . $cCertifiedId . '";';
+            }
+            $conn->Execute($sql);
         }
-        $conn->Execute($sql);
     }
 
     ##地政士
     //更新
-    for ($i = 0; $i < count($_POST['scrivener_sId']); $i++) {
-        if ($_POST['scrivener_donate'][$i] == '') {
-            $_POST['scrivener_donate'][$i] = 0;
-        }
+    if (isset($_POST['scrivener_sId']) && is_array($_POST['scrivener_sId'])) {
+        for ($i = 0; $i < count($_POST['scrivener_sId']); $i++) {
+            if (! isset($_POST['scrivener_donate'][$i]) || $_POST['scrivener_donate'][$i] == '') {
+                $_POST['scrivener_donate'][$i] = 0;
+            }
 
-        if ($_POST['scrivener_print'][$i] == '') {
-            $_POST['scrivener_print'][$i] = 'N';
-        }
+            if (! isset($_POST['scrivener_print'][$i]) || $_POST['scrivener_print'][$i] == '') {
+                $_POST['scrivener_print'][$i] = 'N';
+            }
 
-        $sql = "UPDATE
+            $sql = "UPDATE
                     tContractScrivener
                 SET
                     cInvoiceDonate = '" . $_POST['scrivener_donate'][$i] . "',
@@ -239,21 +283,35 @@ if ($save == 'ok') {
                     cInvoicePrint = '" . $_POST['scrivener_print'][$i] . "'
                 WHERE
                     cCertifiedId='" . $cCertifiedId . "'";
-        $conn->Execute($sql);
+            $conn->Execute($sql);
+        }
     }
     ##
 
     //指定
-    for ($i = 0; $i < count($_POST['another_cId']); $i++) {
-        if ($_POST['another_donate'][$_POST['another_cId'][$i]] == '') {
-            $_POST['another_donate'][$_POST['another_cId'][$i]] = 0;
-        }
+    if (isset($_POST['another_cId']) && is_array($_POST['another_cId'])) {
+        for ($i = 0; $i < count($_POST['another_cId']); $i++) {
+            if (! isset($_POST['another_donate']) || ! is_array($_POST['another_donate']) ||
+                ! isset($_POST['another_donate'][$_POST['another_cId'][$i]]) ||
+                $_POST['another_donate'][$_POST['another_cId'][$i]] == '') {
+                if (! isset($_POST['another_donate'])) {
+                    $_POST['another_donate'] = [];
+                }
 
-        if ($_POST['another_print'][$_POST['another_cId'][$i]] == '') {
-            $_POST['another_print'][$_POST['another_cId'][$i]] = 'N';
-        }
+                $_POST['another_donate'][$_POST['another_cId'][$i]] = 0;
+            }
 
-        $sql = "UPDATE
+            if (! isset($_POST['another_print']) || ! is_array($_POST['another_print']) ||
+                ! isset($_POST['another_print'][$_POST['another_cId'][$i]]) ||
+                $_POST['another_print'][$_POST['another_cId'][$i]] == '') {
+                if (! isset($_POST['another_print'])) {
+                    $_POST['another_print'] = [];
+                }
+
+                $_POST['another_print'][$_POST['another_cId'][$i]] = 'N';
+            }
+
+            $sql = "UPDATE
                     tContractInvoiceExt
                 SET
                     cInvoiceDonate = '" . $_POST['another_donate'][$_POST['another_cId'][$i]] . "',
@@ -261,7 +319,8 @@ if ($save == 'ok') {
                     cInvoicePrint = '" . $_POST['another_print'][$_POST['another_cId'][$i]] . "'
                 WHERE
                     cId = '" . $_POST['another_cId'][$i] . "';";
-        $conn->Execute($sql);
+            $conn->Execute($sql);
+        }
     }
     ##
 

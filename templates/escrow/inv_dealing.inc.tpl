@@ -14,8 +14,8 @@
 <script src="/js/jquery.colorbox.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-    var close = "<{$InvoiceClose}>";
-    var dep = "<{$smarty.session.member_pDep}>";
+    var close = '<{$InvoiceClose|default:''}>';
+    var dep = '<{$smarty.session.member_pDep|default:''}>';
 // alert(close);alert(dep);
     //已匯出進銷檔，所以禁止修改
     if (close =='Y' && ( dep != 9 && dep != 10 )) { //&& dep != 1
@@ -126,7 +126,7 @@ function go2()
 
  function checkInvoiceClose()
 {
-    var close = "<{$close}>";
+    var close = '<{$close|default:''}>';
     var check = 1;
 
     $.ajax({
@@ -134,7 +134,7 @@ function go2()
         url: '/includes/escrow/check_other.php',
         type: 'POST',
         dataType: 'html',
-        data: {'cid': "<{$cCertifiedId}>",'type':'invoiceclose','close':close},
+        data: {'cid': '<{$cCertifiedId|default:''}>','type':'invoiceclose','close':close},
     })
     .done(function(txt) {
         check = txt ;
@@ -146,12 +146,11 @@ function go2()
     }else{
         return true;
     }
-               
-
 }
 
 //重新分配大項
 function category_split() {
+    console.log('category_split function called'); // 調試日誌
     var cer = $('[name="total_cCertifiedMoney"]').val() ;           //保證費
     var arr = new Array() ;
     var index = 0 ;
@@ -195,7 +194,7 @@ function item_split() {
     item_dollar('cInvoiceBuyer','Buyer_chk','buyer_donate') ;              //買方金額分配
     item_dollar('cInvoiceRealestate','Realestate_chk','branch_donate') ;    //仲介金額分配
 
-    var ck = "<{$data_scrivener_another.cId}>";
+    var ck = '<{$data_scrivener_another.cId|default:''}>'.toString();
     
     if (ck !='') {
         if ($('[value="cInvoiceScrivener"]').prop('checked')) {
@@ -321,6 +320,12 @@ function another_link(str,type,id)
     $("[name='another_form']").submit();
 }
 
+// 確認函數已定義
+console.log('Functions defined:', {
+    category_split: typeof category_split,
+    item_split: typeof item_split,
+    go: typeof go
+});
 
 </script>
 <style>
