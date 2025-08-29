@@ -835,7 +835,7 @@ textarea{
 
         <div style="text-align: center;">
             <{if $data_case.cFeedBackClose != 1}>
-            <input type="button" id="apply" value="送出" class="btnD" onclick="save('<{$cat}>')">
+            <input type="button" id="apply" value="送出" class="btnD" onclick="save('<{if $review.fId != ''}>save<{else}>add<{/if}>')">
             <{/if}>
         </div>
     </form>
